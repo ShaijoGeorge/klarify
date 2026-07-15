@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/database/flashcard.dart';
 import 'features/scanner/scanner_screen.dart';
+import 'features/deck/deck_screen.dart';
 
 // Global variable for the database
 late Isar isarDb;
@@ -38,7 +39,7 @@ class KlarifyGermanApp extends StatelessWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
 
-      home: const ScannerScreen()
+      home: const MainLayoutScreen()
     );
   }
 }
@@ -94,6 +95,50 @@ class TestDashboardScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class MainLayoutScreen extends StatefulWidget {
+  const MainLayoutScreen({super.key});
+
+  @override
+  State<MainLayoutScreen> createState() => _MainLayoutScreenState();
+}
+
+class _MainLayoutScreenState extends State<MainLayoutScreen> {
+  int _currentIndex = 0;
+  
+  // The two screens we can switch between!
+  final List<Widget> _screens = [
+    const DeckScreen(),
+    const ScannerScreen(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _screens[_currentIndex],
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _currentIndex,
+        onDestinationSelected: (int index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.style_outlined),
+            selectedIcon: Icon(Icons.style),
+            label: 'Study',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.document_scanner_outlined),
+            selectedIcon: Icon(Icons.document_scanner),
+            label: 'Scan',
+          ),
+        ],
       ),
     );
   }
