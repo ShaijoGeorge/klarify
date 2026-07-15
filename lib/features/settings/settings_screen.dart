@@ -31,11 +31,16 @@ class SettingsScreen extends StatelessWidget {
                         color: scheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: scheme.outline.withValues(alpha: isDark ? 0.15 : 0.5),
+                          color: scheme.outline.withValues(
+                            alpha: isDark ? 0.15 : 0.5,
+                          ),
                         ),
                       ),
-                      child: Icon(Icons.arrow_back_rounded,
-                          color: scheme.onSurface, size: 20),
+                      child: Icon(
+                        Icons.arrow_back_rounded,
+                        color: scheme.onSurface,
+                        size: 20,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -62,11 +67,16 @@ class SettingsScreen extends StatelessWidget {
                       return _SettingsTile(
                         icon: Icons.palette_rounded,
                         title: 'Theme',
-                        subtitle: themeMode == ThemeMode.system ? 'Follows system setting' : 'Custom theme applied',
+                        subtitle: themeMode == ThemeMode.system
+                            ? 'Follows system setting'
+                            : 'Custom theme applied',
                         isDark: isDark,
                         onTap: () => _showThemeSheet(context),
                         trailing: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: scheme.primaryContainer,
                             borderRadius: BorderRadius.circular(8),
@@ -93,7 +103,10 @@ class SettingsScreen extends StatelessWidget {
                         isDark: isDark,
                         onTap: () => _showFontSheet(context),
                         trailing: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: scheme.primaryContainer,
                             borderRadius: BorderRadius.circular(8),
@@ -148,12 +161,6 @@ class SettingsScreen extends StatelessWidget {
                     subtitle: 'v1.0.0',
                     isDark: isDark,
                   ),
-                  _SettingsTile(
-                    icon: Icons.code_rounded,
-                    title: 'Built With',
-                    subtitle: 'Flutter · Isar · Gemini AI',
-                    isDark: isDark,
-                  ),
                 ],
               ),
 
@@ -163,10 +170,7 @@ class SettingsScreen extends StatelessWidget {
               Center(
                 child: Column(
                   children: [
-                    Text(
-                      'Klarify German',
-                      style: theme.textTheme.titleMedium,
-                    ),
+                    Text('Klarify German', style: theme.textTheme.titleMedium),
                     const SizedBox(height: 4),
                     Text(
                       'Made with ❤️ by Shaijo George',
@@ -206,7 +210,10 @@ class SettingsScreen extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 8,
+                  ),
                   child: Row(
                     children: [
                       Text('Select Theme', style: theme.textTheme.titleMedium),
@@ -247,7 +254,10 @@ class SettingsScreen extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 8,
+                  ),
                   child: Row(
                     children: [
                       Text('Select Font', style: theme.textTheme.titleMedium),
@@ -283,7 +293,10 @@ class SettingsScreen extends StatelessWidget {
             color: scheme.outline.withValues(alpha: isDark ? 0.15 : 0.5),
           ),
         ),
-        title: Text('Clear All Flashcards?', style: theme.textTheme.titleMedium),
+        title: Text(
+          'Clear All Flashcards?',
+          style: theme.textTheme.titleMedium,
+        ),
         content: Text(
           'This will permanently delete all your saved flashcards. This action cannot be undone.',
           style: theme.textTheme.bodyMedium?.copyWith(
@@ -293,7 +306,10 @@ class SettingsScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: TextStyle(color: scheme.onSurfaceVariant)),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: scheme.onSurfaceVariant),
+            ),
           ),
           FilledButton(
             onPressed: () async {
@@ -306,7 +322,9 @@ class SettingsScreen extends StatelessWidget {
                   SnackBar(
                     content: const Text('All flashcards deleted.'),
                     behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 );
               }
@@ -314,7 +332,9 @@ class SettingsScreen extends StatelessWidget {
             style: FilledButton.styleFrom(
               backgroundColor: scheme.error,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: const Text('Delete All'),
           ),
@@ -461,12 +481,12 @@ class _ThemeOption extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    
+
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeNotifier,
       builder: (context, currentMode, _) {
         final isSelected = currentMode == mode;
-        
+
         return ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 24),
           title: Text(
@@ -487,7 +507,7 @@ class _ThemeOption extends StatelessWidget {
             if (context.mounted) Navigator.pop(context);
           },
         );
-      }
+      },
     );
   }
 }
@@ -501,12 +521,12 @@ class _FontOption extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    
+
     return ValueListenableBuilder<String>(
       valueListenable: fontNotifier,
       builder: (context, currentFont, _) {
         final isSelected = currentFont == title;
-        
+
         return ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 24),
           title: Text(
@@ -524,7 +544,7 @@ class _FontOption extends StatelessWidget {
             if (context.mounted) Navigator.pop(context);
           },
         );
-      }
+      },
     );
   }
 }
