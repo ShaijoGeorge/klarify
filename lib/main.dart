@@ -4,16 +4,15 @@ import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/database/flashcard.dart';
-import 'features/scanner/scanner_screen.dart';
-import 'features/deck/deck_screen.dart';
+import 'app_shell.dart';
 
 // Global variable for the database
 late Isar isarDb;
 
-void main() async{
-
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
+
   // Find a safe folder on the phone to put the filing cabinet
   final dir = await getApplicationDocumentsDirectory();
 
@@ -29,7 +28,6 @@ void main() async{
 class KlarifyGermanApp extends StatelessWidget {
   const KlarifyGermanApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -38,108 +36,7 @@ class KlarifyGermanApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
-
-      home: const MainLayoutScreen()
-    );
-  }
-}
-
-// Temporary layout template to test if the colors shift correctly
-class TestDashboardScreen extends StatelessWidget {
-  const TestDashboardScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    // Detects if the screen is currently displaying dark or light colors
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Klarify German'),
-        centerTitle: true,
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Willkommen!',
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Change your phone settings to watch the colors shift automatically.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-              const SizedBox(height: 40),
-              
-              // Testing one card using our gender color logic
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: AppTheme.getGenderColor('der', isDark),
-                    width: 2,
-                  ),
-                ),
-                child: const Text(
-                  'der Hund (Dog)',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class MainLayoutScreen extends StatefulWidget {
-  const MainLayoutScreen({super.key});
-
-  @override
-  State<MainLayoutScreen> createState() => _MainLayoutScreenState();
-}
-
-class _MainLayoutScreenState extends State<MainLayoutScreen> {
-  int _currentIndex = 0;
-  
-  // The two screens we can switch between!
-  final List<Widget> _screens = [
-    const DeckScreen(),
-    const ScannerScreen(),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: _screens[_currentIndex],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (int index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.style_outlined),
-            selectedIcon: Icon(Icons.style),
-            label: 'Study',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.document_scanner_outlined),
-            selectedIcon: Icon(Icons.document_scanner),
-            label: 'Scan',
-          ),
-        ],
-      ),
+      home: const AppShell(),
     );
   }
 }
