@@ -19,10 +19,12 @@ class _DeckScreenState extends State<DeckScreen> with SingleTickerProviderStateM
   bool _isFlipped = false;
   late AnimationController _flipController;
   late Animation<double> _flipAnimation;
+  late PageController _pageController;
 
   @override
   void initState() {
     super.initState();
+    _pageController = PageController();
     _flipController = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
     _flipAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _flipController, curve: Curves.easeInOutBack),
@@ -33,6 +35,7 @@ class _DeckScreenState extends State<DeckScreen> with SingleTickerProviderStateM
   @override
   void dispose() {
     _flipController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -62,20 +65,11 @@ class _DeckScreenState extends State<DeckScreen> with SingleTickerProviderStateM
     final nextIndex = _currentIndex + delta;
     if (nextIndex < 0 || nextIndex >= _cards.length) return;
 
-    setState(() {
-      _currentIndex = nextIndex;
-      _isFlipped = false;
-    });
-    _flipController.reset();
-  }
-
-  void _handleSwipe(DragEndDetails details) {
-    final velocity = details.primaryVelocity ?? 0;
-    if (velocity < -200) {
-      _goToCard(1);
-    } else if (velocity > 200) {
-      _goToCard(-1);
-    }
+    _pageController.animateToPage(
+      nextIndex,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
   }
 
   @override
@@ -156,38 +150,57 @@ class _DeckScreenState extends State<DeckScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildCardReview(ThemeData theme, bool isDark) {
-    final currentCard = _cards[_currentIndex];
-    final article = currentCard.article ?? '';
-    final genderColor = AppTheme.getGenderColor(article, isDark);
     final canGoBack = _currentIndex > 0;
     final canGoForward = _currentIndex < _cards.length - 1;
 
     return Column(
       children: [
         Expanded(
-          child: GestureDetector(
-            onTap: _flipCard,
-            onHorizontalDragEnd: _handleSwipe,
-            child: AnimatedBuilder(
-              animation: _flipAnimation,
-              builder: (context, child) {
-                final angle = _flipAnimation.value * math.pi;
-                final isFront = angle < math.pi / 2;
-                return Transform(
-                  alignment: Alignment.center,
-                  transform: Matrix4.identity()
-                    ..setEntry(3, 2, 0.001)
-                    ..rotateY(angle),
-                  child: isFront
-                      ? _buildCardFront(theme, isDark, currentCard, genderColor)
-                      : Transform(
-                          alignment: Alignment.center,
-                          transform: Matrix4.identity()..rotateY(math.pi),
-                          child: _buildCardBack(theme, isDark, currentCard, genderColor),
-                        ),
-                );
-              },
-            ),
+          child: PageView.builder(
+            controller: _pageController,
+            physics: const BouncingScrollPhysics(),
+            onPageChanged: (index) {
+              setState(() {
+                _currentIndex = index;
+                _isFlipped = false;
+              });
+              _flipController.reset();
+            },
+            itemCount: _cards.length,
+            itemBuilder: (context, index) {
+              final card = _cards[index];
+              final article = card.article ?? '';
+              final genderColor = AppTheme.getGenderColor(article, isDark);
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                child: GestureDetector(
+                  onTap: () {
+                    if (index == _currentIndex) _flipCard();
+                  },
+                  child: AnimatedBuilder(
+                    animation: _flipAnimation,
+                    builder: (context, child) {
+                      final angle = index == _currentIndex ? _flipAnimation.value * math.pi : 0.0;
+                      final isFront = angle < math.pi / 2;
+                      return Transform(
+                        alignment: Alignment.center,
+                        transform: Matrix4.identity()
+                          ..setEntry(3, 2, 0.001)
+                          ..rotateY(angle),
+                        child: isFront
+                            ? _buildCardFront(theme, isDark, card, genderColor)
+                            : Transform(
+                                alignment: Alignment.center,
+                                transform: Matrix4.identity()..rotateY(math.pi),
+                                child: _buildCardBack(theme, isDark, card, genderColor),
+                              ),
+                      );
+                    },
+                  ),
+                ),
+              );
+            },
           ),
         ),
         const SizedBox(height: 20),
@@ -199,33 +212,6 @@ class _DeckScreenState extends State<DeckScreen> with SingleTickerProviderStateM
             Text(
               _isFlipped ? 'Swipe left or right to change cards' : 'Tap to reveal',
               style: theme.textTheme.bodyMedium,
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            IconButton.filledTonal(
-              onPressed: canGoBack ? () => _goToCard(-1) : null,
-              icon: const Icon(Icons.chevron_left_rounded),
-              tooltip: 'Previous card',
-            ),
-            const Spacer(),
-            Text(
-              canGoBack && canGoForward
-                  ? 'Swipe to browse'
-                  : canGoBack
-                      ? 'Last card'
-                      : canGoForward
-                          ? 'First card'
-                          : 'Only card',
-              style: theme.textTheme.labelLarge,
-            ),
-            const Spacer(),
-            IconButton.filledTonal(
-              onPressed: canGoForward ? () => _goToCard(1) : null,
-              icon: const Icon(Icons.chevron_right_rounded),
-              tooltip: 'Next card',
             ),
           ],
         ),
@@ -268,10 +254,16 @@ class _DeckScreenState extends State<DeckScreen> with SingleTickerProviderStateM
               ),
             ),
           const SizedBox(height: 16),
-          Text(
-            card.word ?? '',
-            style: theme.textTheme.displayLarge?.copyWith(fontSize: 42),
-            textAlign: TextAlign.center,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                card.word ?? '',
+                style: theme.textTheme.displayLarge?.copyWith(fontSize: 42),
+                textAlign: TextAlign.center,
+              ),
+            ),
           ),
         ],
       ),
@@ -297,14 +289,17 @@ class _DeckScreenState extends State<DeckScreen> with SingleTickerProviderStateM
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            '${card.article ?? ''} ${card.word ?? ''}',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w700,
-              color: genderColor,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              '${card.article ?? ''} ${card.word ?? ''}',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w700,
+                color: genderColor,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
           ),
           if ((card.pluralForm ?? '').isNotEmpty) ...[
             const SizedBox(height: 6),
@@ -323,10 +318,13 @@ class _DeckScreenState extends State<DeckScreen> with SingleTickerProviderStateM
             ),
           ),
           const SizedBox(height: 20),
-          Text(
-            card.translation ?? '',
-            style: theme.textTheme.headlineMedium,
-            textAlign: TextAlign.center,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              card.translation ?? '',
+              style: theme.textTheme.headlineMedium,
+              textAlign: TextAlign.center,
+            ),
           ),
         ],
       ),
