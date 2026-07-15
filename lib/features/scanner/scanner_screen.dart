@@ -62,7 +62,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
       
     } catch (e) {
       setState(() {
-        _extractedText = "Error: Something went wrong.";
+        _extractedText = "CRASH REPORT:\n$e"; // show the exact error!
       });
     } finally {
       setState(() {

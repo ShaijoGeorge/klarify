@@ -12,7 +12,7 @@ class AiService {
   static Future<List<Flashcard>> generateFlashcards(String rawText) async {
     // Wake up the Gemini Brain
     final model = GenerativeModel(
-      model: 'gemini-1.5-flash', // The super-fast, free version
+      model: 'gemini-2.5-flash', // The super-fast, free version
       apiKey: _apiKey,
     );
 
@@ -62,7 +62,7 @@ class AiService {
       return newCards;
     } catch (e) {
       log("The Brain got confused: $e");
-      return []; // Return nothing if it fails
+      throw Exception("AI Error: $e");
     }
   }
 }
