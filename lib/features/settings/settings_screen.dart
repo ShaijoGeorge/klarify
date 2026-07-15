@@ -52,34 +52,63 @@ class SettingsScreen extends StatelessWidget {
               _SettingsGroup(
                 isDark: isDark,
                 children: [
-                  _SettingsTile(
-                    icon: Icons.palette_rounded,
-                    title: 'Theme',
-                    subtitle: 'Follows system setting',
-                    isDark: isDark,
-                    trailing: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: scheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        isDark ? 'Dark' : 'Light',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: scheme.primary,
+                  ValueListenableBuilder<ThemeMode>(
+                    valueListenable: themeNotifier,
+                    builder: (context, themeMode, _) {
+                      String themeText = 'System';
+                      if (themeMode == ThemeMode.light) themeText = 'Light';
+                      if (themeMode == ThemeMode.dark) themeText = 'Dark';
+
+                      return _SettingsTile(
+                        icon: Icons.palette_rounded,
+                        title: 'Theme',
+                        subtitle: themeMode == ThemeMode.system ? 'Follows system setting' : 'Custom theme applied',
+                        isDark: isDark,
+                        onTap: () => _showThemeSheet(context),
+                        trailing: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: scheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            themeText,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: scheme.primary,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   ),
-                  _SettingsTile(
-                    icon: Icons.translate_rounded,
-                    title: 'Language',
-                    subtitle: 'English',
-                    isDark: isDark,
-                    trailing: Icon(Icons.chevron_right_rounded,
-                        color: scheme.onSurfaceVariant, size: 20),
+                  ValueListenableBuilder<String>(
+                    valueListenable: fontNotifier,
+                    builder: (context, currentFont, _) {
+                      return _SettingsTile(
+                        icon: Icons.font_download_rounded,
+                        title: 'Font',
+                        subtitle: currentFont,
+                        isDark: isDark,
+                        onTap: () => _showFontSheet(context),
+                        trailing: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: scheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            currentFont,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: scheme.primary,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -116,7 +145,7 @@ class SettingsScreen extends StatelessWidget {
                   _SettingsTile(
                     icon: Icons.info_outline_rounded,
                     title: 'App Version',
-                    subtitle: '1.0.0',
+                    subtitle: 'v1.0.0',
                     isDark: isDark,
                   ),
                   _SettingsTile(
@@ -152,6 +181,90 @@ class SettingsScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  void _showThemeSheet(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: scheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        side: BorderSide(
+          color: scheme.outline.withValues(alpha: isDark ? 0.15 : 0.3),
+        ),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  child: Row(
+                    children: [
+                      Text('Select Theme', style: theme.textTheme.titleMedium),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _ThemeOption(title: 'System Default', mode: ThemeMode.system),
+                _ThemeOption(title: 'Light', mode: ThemeMode.light),
+                _ThemeOption(title: 'Dark', mode: ThemeMode.dark),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showFontSheet(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: scheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        side: BorderSide(
+          color: scheme.outline.withValues(alpha: isDark ? 0.15 : 0.3),
+        ),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  child: Row(
+                    children: [
+                      Text('Select Font', style: theme.textTheme.titleMedium),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _FontOption(title: 'Inter'),
+                _FontOption(title: 'Roboto'),
+                _FontOption(title: 'Open Sans'),
+                _FontOption(title: 'Outfit'),
+                _FontOption(title: 'Lora'),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -334,6 +447,84 @@ class _SettingsTile extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ThemeOption extends StatelessWidget {
+  final String title;
+  final ThemeMode mode;
+
+  const _ThemeOption({required this.title, required this.mode});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: themeNotifier,
+      builder: (context, currentMode, _) {
+        final isSelected = currentMode == mode;
+        
+        return ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+          title: Text(
+            title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: isSelected ? scheme.primary : scheme.onSurface,
+            ),
+          ),
+          trailing: isSelected
+              ? Icon(Icons.check_circle_rounded, color: scheme.primary)
+              : null,
+          onTap: () async {
+            themeNotifier.value = mode;
+            String savedValue = 'system';
+            if (mode == ThemeMode.light) savedValue = 'light';
+            if (mode == ThemeMode.dark) savedValue = 'dark';
+            await prefs.setString('themeMode', savedValue);
+            if (context.mounted) Navigator.pop(context);
+          },
+        );
+      }
+    );
+  }
+}
+
+class _FontOption extends StatelessWidget {
+  final String title;
+
+  const _FontOption({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    
+    return ValueListenableBuilder<String>(
+      valueListenable: fontNotifier,
+      builder: (context, currentFont, _) {
+        final isSelected = currentFont == title;
+        
+        return ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+          title: Text(
+            title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: isSelected ? scheme.primary : scheme.onSurface,
+            ),
+          ),
+          trailing: isSelected
+              ? Icon(Icons.check_circle_rounded, color: scheme.primary)
+              : null,
+          onTap: () async {
+            fontNotifier.value = title;
+            await prefs.setString('fontFamily', title);
+            if (context.mounted) Navigator.pop(context);
+          },
+        );
+      }
     );
   }
 }
