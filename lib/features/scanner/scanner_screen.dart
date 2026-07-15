@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
@@ -17,10 +19,11 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
   final ImagePicker _picker = ImagePicker();
   final TextRecognizer _textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
 
-  // States: idle, scanning, aiProcessing, scannedLibrary, test, success, error
+  // States: idle, selecting, scanning, aiProcessing, scannedLibrary, test, success, error
   String _phase = 'idle';
   String _statusMessage = '';
   int _savedCount = 0;
+  List<XFile> _selectedImages = [];
   List<Flashcard> _scannedCards = [];
   int _testIndex = 0;
   bool _showAnswer = false;
@@ -44,25 +47,68 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
     super.dispose();
   }
 
-  Future<void> _scanTextbook() async {
+  Future<void> _addCameraPhoto() async {
     final XFile? photo = await _picker.pickImage(source: ImageSource.camera);
     if (photo == null) return;
 
     setState(() {
+      _selectedImages.add(photo);
+      _phase = 'selecting';
+    });
+  }
+
+  Future<void> _addGalleryImages() async {
+    final List<XFile> images = await _picker.pickMultiImage();
+    if (images.isEmpty) return;
+
+    setState(() {
+      _selectedImages.addAll(images);
+      _phase = 'selecting';
+    });
+  }
+
+  void _removeImage(int index) {
+    setState(() {
+      _selectedImages.removeAt(index);
+      if (_selectedImages.isEmpty) {
+        _phase = 'idle';
+      }
+    });
+  }
+
+  Future<void> _processSelectedImages() async {
+    if (_selectedImages.isEmpty) return;
+
+    final totalPages = _selectedImages.length;
+    setState(() {
       _phase = 'scanning';
-      _statusMessage = 'Reading the textbook page…';
+      _statusMessage = totalPages == 1
+          ? 'Reading the textbook page…'
+          : 'Reading page 1 of $totalPages…';
     });
 
     try {
-      final inputImage = InputImage.fromFilePath(photo.path);
-      final RecognizedText recognizedText = await _textRecognizer.processImage(inputImage);
+      final textBuffer = StringBuffer();
+      for (var i = 0; i < _selectedImages.length; i++) {
+        if (i > 0) {
+          setState(() {
+            _statusMessage = 'Reading page ${i + 1} of $totalPages…';
+          });
+        }
+
+        final inputImage = InputImage.fromFilePath(_selectedImages[i].path);
+        final RecognizedText recognizedText =
+            await _textRecognizer.processImage(inputImage);
+        textBuffer.writeln(recognizedText.text);
+      }
 
       setState(() {
         _phase = 'aiProcessing';
         _statusMessage = 'AI is building your flashcards…';
       });
 
-      final List<Flashcard> generatedCards = await AiService.generateFlashcards(recognizedText.text);
+      final List<Flashcard> generatedCards =
+          await AiService.generateFlashcards(textBuffer.toString());
 
       if (generatedCards.isNotEmpty) {
         await isarDb.writeTxn(() async {
@@ -75,12 +121,15 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
           _savedCount = generatedCards.length;
           _testIndex = 0;
           _showAnswer = false;
-          _statusMessage = 'Saved $_savedCount words from this scan.';
+          _selectedImages = [];
+          _statusMessage = totalPages == 1
+              ? 'Saved $_savedCount words from this scan.'
+              : 'Saved $_savedCount words from $totalPages pages.';
         });
       } else {
         setState(() {
           _phase = 'error';
-          _statusMessage = 'No German vocabulary found. Try a clearer page.';
+          _statusMessage = 'No German vocabulary found. Try clearer photos.';
         });
       }
     } catch (e) {
@@ -132,6 +181,7 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
       _phase = 'idle';
       _statusMessage = '';
       _savedCount = 0;
+      _selectedImages = [];
       _scannedCards = [];
       _testIndex = 0;
       _showAnswer = false;
@@ -178,6 +228,8 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
 
   Widget _buildPhaseContent(ThemeData theme, bool isDark) {
     switch (_phase) {
+      case 'selecting':
+        return _buildSelectingState(theme, isDark);
       case 'scanning':
       case 'aiProcessing':
         return _buildProcessingState(theme, isDark);
@@ -223,7 +275,7 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
         ),
         const SizedBox(height: 32),
         Text(
-          'Scan a Textbook Page',
+          'Scan Textbook Pages',
           style: theme.textTheme.headlineMedium,
           textAlign: TextAlign.center,
         ),
@@ -231,20 +283,19 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Text(
-            'Scan the assigned vocab page. The words save automatically, then you can take a quick test.',
+            'Take multiple photos or pick images from your gallery. Add all vocab pages, then scan them together.',
             style: theme.textTheme.bodyMedium,
             textAlign: TextAlign.center,
           ),
         ),
         const Spacer(flex: 2),
-        // Scan button
         SizedBox(
           width: double.infinity,
           height: 58,
           child: ElevatedButton.icon(
-            onPressed: _scanTextbook,
-            icon: const Icon(Icons.bolt_rounded, size: 22),
-            label: const Text('Scan Vocab Page'),
+            onPressed: _addCameraPhoto,
+            icon: const Icon(Icons.camera_alt_rounded, size: 22),
+            label: const Text('Take Photos'),
             style: ElevatedButton.styleFrom(
               backgroundColor: theme.colorScheme.primary,
               foregroundColor: theme.colorScheme.onPrimary,
@@ -252,7 +303,186 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
             ),
           ),
         ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          height: 58,
+          child: OutlinedButton.icon(
+            onPressed: _addGalleryImages,
+            icon: const Icon(Icons.photo_library_rounded, size: 22),
+            label: const Text('Choose from Gallery'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              side: BorderSide(color: theme.colorScheme.outline),
+            ),
+          ),
+        ),
         const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  // ─── Selecting: review photos before scanning ───
+  Widget _buildSelectingState(ThemeData theme, bool isDark) {
+    final pageCount = _selectedImages.length;
+    final pageLabel = pageCount == 1 ? '1 page selected' : '$pageCount pages selected';
+
+    return Column(
+      key: const ValueKey('selecting'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            OutlinedButton.icon(
+              onPressed: _reset,
+              icon: const Icon(Icons.arrow_back_rounded, size: 16),
+              label: const Text('Back'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                minimumSize: const Size(0, 36),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Text(
+                pageLabel,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Review your pages',
+          style: theme.textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Add more photos from the camera or gallery, then scan all pages together.',
+          style: theme.textTheme.bodyMedium,
+        ),
+        const SizedBox(height: 16),
+        Expanded(
+          child: GridView.builder(
+            physics: const BouncingScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+            ),
+            itemCount: _selectedImages.length,
+            itemBuilder: (context, index) {
+              final image = _selectedImages[index];
+              return Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: Image.file(
+                      File(image.path),
+                      width: double.infinity,
+                      height: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: Material(
+                      color: theme.colorScheme.errorContainer,
+                      shape: const CircleBorder(),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        onTap: () => _removeImage(index),
+                        child: Padding(
+                          padding: const EdgeInsets.all(4),
+                          child: Icon(
+                            Icons.close_rounded,
+                            size: 16,
+                            color: theme.colorScheme.onErrorContainer,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: 8,
+                    bottom: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.55),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '${index + 1}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _addCameraPhoto,
+                icon: const Icon(Icons.add_a_photo_rounded, size: 18),
+                label: const Text('Camera'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _addGalleryImages,
+                icon: const Icon(Icons.photo_library_rounded, size: 18),
+                label: const Text('Gallery'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          height: 58,
+          child: ElevatedButton.icon(
+            onPressed: _processSelectedImages,
+            icon: const Icon(Icons.bolt_rounded, size: 22),
+            label: Text(pageCount == 1 ? 'Scan Page' : 'Scan $pageCount Pages'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.colorScheme.primary,
+              foregroundColor: theme.colorScheme.onPrimary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+          ),
+        ),
       ],
     );
   }
