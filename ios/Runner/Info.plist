@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Klarify German needs your camera to scan German textbooks and turn them into flashcards.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Klarify German needs access to your gallery if you want to upload screenshots.</string>
 </dict>
 </plist>

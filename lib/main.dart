@@ -1,7 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:isar/isar.dart';
+import 'package:path_provider/path_provider.dart';
 import 'core/theme/app_theme.dart';
+import 'core/database/flashcard.dart';
 
-void main() {
+// Global variable for the database
+late Isar isarDb;
+
+void main() async{
+
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Find a safe folder on the phone to put the filing cabinet
+  final dir = await getApplicationDocumentsDirectory();
+
+  // Open the Isar filing cabinet and tell it to use our Flashcard blueprint
+  isarDb = await Isar.open(
+    [FlashcardSchema],
+    directory: dir.path,
+  );
+
   runApp(const KlarifyGermanApp());
 }
 
