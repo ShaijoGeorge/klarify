@@ -3,6 +3,7 @@ import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/database/flashcard.dart';
+import 'features/scanner/scanner_screen.dart';
 
 // Global variable for the database
 late Isar isarDb;
@@ -36,7 +37,7 @@ class KlarifyGermanApp extends StatelessWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
 
-      home: const TestDashboardScreen()
+      home: const ScannerScreen()
     );
   }
 }

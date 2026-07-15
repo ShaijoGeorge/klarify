@@ -1,0 +1,21 @@
+project.subprojects { subproject ->
+    def fixNamespace = {
+        if (subproject.hasProperty("android")) {
+            if (subproject.android.namespace == null) {
+                def groupStr = subproject.group.toString()
+                if (groupStr == null || groupStr.isEmpty()) {
+                    groupStr = "com.example." + subproject.name
+                }
+                subproject.android.namespace = groupStr
+            }
+        }
+    }
+    
+    if (subproject.state.executed) {
+        fixNamespace()
+    } else {
+        subproject.afterEvaluate {
+            fixNamespace()
+        }
+    }
+}
