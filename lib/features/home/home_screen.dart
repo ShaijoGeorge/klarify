@@ -163,7 +163,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w700,
-                                color: isDark ? scheme.onPrimaryContainer : Colors.white,
+                                color: Colors.white,
                               ),
                             ),
                             const SizedBox(height: 6),
@@ -173,9 +173,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                   : 'Scan a textbook page to start building your deck.',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: isDark
-                                    ? scheme.onPrimaryContainer.withValues(alpha: 0.8)
-                                    : Colors.white.withValues(alpha: 0.85),
+                                color: Colors.white.withValues(alpha: 0.85),
                               ),
                             ),
                           ],
