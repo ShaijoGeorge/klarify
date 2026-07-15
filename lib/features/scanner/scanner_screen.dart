@@ -157,15 +157,22 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
   void _moveTest(int delta) {
     if (_scannedCards.isEmpty) return;
 
+    final nextIndex = _testIndex + delta;
+    if (nextIndex < 0 || nextIndex >= _scannedCards.length) return;
+
     setState(() {
-      final nextIndex = _testIndex + delta;
-      _testIndex = nextIndex < 0
-          ? 0
-          : nextIndex >= _scannedCards.length
-              ? _scannedCards.length - 1
-              : nextIndex;
+      _testIndex = nextIndex;
       _showAnswer = false;
     });
+  }
+
+  void _handleTestSwipe(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    if (velocity < -200) {
+      _moveTest(1);
+    } else if (velocity > 200) {
+      _moveTest(-1);
+    }
   }
 
   void _finishTest() {
@@ -711,6 +718,7 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
         Expanded(
           child: GestureDetector(
             onTap: _toggleTestAnswer,
+            onHorizontalDragEnd: _handleTestSwipe,
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 220),
               switchInCurve: Curves.easeOutCubic,
@@ -803,26 +811,46 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
         ),
         const SizedBox(height: 18),
         Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.swipe_rounded, size: 18, color: theme.colorScheme.onSurfaceVariant),
+            const SizedBox(width: 8),
+            Text(
+              _showAnswer ? 'Swipe left or right to change cards' : 'Tap to reveal',
+              style: theme.textTheme.bodyMedium,
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
           children: [
             IconButton.filledTonal(
               onPressed: canGoBack ? () => _moveTest(-1) : null,
               icon: const Icon(Icons.chevron_left_rounded),
               tooltip: 'Previous card',
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: FilledButton.icon(
-                onPressed: canGoForward ? () => _moveTest(1) : _finishTest,
-                icon: Icon(canGoForward ? Icons.chevron_right_rounded : Icons.check_rounded,
-                    size: 20),
-                label: Text(canGoForward ? 'Next Card' : 'Finish Test'),
+            const Spacer(),
+            if (canGoForward)
+              FilledButton.icon(
+                onPressed: () => _moveTest(1),
+                icon: const Icon(Icons.chevron_right_rounded, size: 20),
+                label: const Text('Next Card'),
                 style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+              )
+            else
+              FilledButton.icon(
+                onPressed: _finishTest,
+                icon: const Icon(Icons.check_rounded, size: 20),
+                label: const Text('Finish Test'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
               ),
-            ),
-            const SizedBox(width: 10),
+            const Spacer(),
             IconButton.filledTonal(
               onPressed: () {
                 setState(() {
@@ -834,17 +862,6 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
               tooltip: 'Back to scanned vocabulary',
             ),
           ],
-        ),
-        const SizedBox(height: 10),
-        TextButton.icon(
-          onPressed: () {
-            setState(() {
-              _phase = 'scannedLibrary';
-              _showAnswer = false;
-            });
-          },
-          icon: const Icon(Icons.menu_book_rounded, size: 18),
-          label: const Text('Back to Scanned Vocab'),
         ),
       ],
     );

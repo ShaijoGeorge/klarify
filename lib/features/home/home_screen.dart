@@ -24,7 +24,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   int _totalCards = 0;
-  int _dueCards = 0;
   int _masteredCards = 0;
   bool _isLoading = true;
   late AnimationController _animController;
@@ -46,14 +45,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Future<void> _loadStats() async {
     final total = await isarDb.flashcards.count();
-    final now = DateTime.now();
-    final due = await isarDb.flashcards
-        .filter()
-        .nextReviewDateLessThan(now)
-        .or()
-        .nextReviewDateIsNull()
-        .count();
-    // "Mastered" = reviewed more than 3 times consecutively correct
     final mastered = await isarDb.flashcards
         .filter()
         .consecutiveCorrectGreaterThan(3)
@@ -61,7 +52,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
     setState(() {
       _totalCards = total;
-      _dueCards = due;
       _masteredCards = mastered;
       _isLoading = false;
     });
@@ -181,9 +171,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              _dueCards > 0
-                                  ? 'You have $_dueCards card${_dueCards == 1 ? '' : 's'} waiting to review.'
-                                  : 'All caught up! Scan a new page to keep learning.',
+                              _totalCards > 0
+                                  ? 'You have $_totalCards card${_totalCards == 1 ? '' : 's'} ready to study.'
+                                  : 'Scan a textbook page to start building your deck.',
                               style: TextStyle(
                                 fontSize: 15,
                                 color: Colors.white.withValues(alpha: 0.85),
@@ -203,14 +193,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             label: 'Total',
                             value: '$_totalCards',
                             color: theme.colorScheme.primary,
-                            isDark: isDark,
-                          )),
-                          const SizedBox(width: 12),
-                          Expanded(child: _StatTile(
-                            icon: Icons.schedule_rounded,
-                            label: 'Due',
-                            value: '$_dueCards',
-                            color: theme.colorScheme.error,
                             isDark: isDark,
                           )),
                           const SizedBox(width: 12),
@@ -247,9 +229,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       _ActionCard(
                         icon: Icons.style_rounded,
                         title: 'Review Deck',
-                        subtitle: _dueCards > 0
-                            ? '$_dueCards card${_dueCards == 1 ? '' : 's'} ready to study'
-                            : 'No cards due — you\'re all caught up!',
+                        subtitle: _totalCards > 0
+                            ? 'Swipe through $_totalCards card${_totalCards == 1 ? '' : 's'}'
+                            : 'Scan pages to add flashcards first',
                         gradient: [
                           theme.colorScheme.secondary.withValues(alpha: isDark ? 0.15 : 0.08),
                           theme.colorScheme.secondary.withValues(alpha: isDark ? 0.05 : 0.02),

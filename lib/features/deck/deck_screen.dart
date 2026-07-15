@@ -12,14 +12,13 @@ class DeckScreen extends StatefulWidget {
   State<DeckScreen> createState() => _DeckScreenState();
 }
 
-class _DeckScreenState extends State<DeckScreen> with TickerProviderStateMixin {
-  List<Flashcard> _dueCards = [];
+class _DeckScreenState extends State<DeckScreen> with SingleTickerProviderStateMixin {
+  List<Flashcard> _cards = [];
+  int _currentIndex = 0;
   bool _isLoading = true;
   bool _isFlipped = false;
   late AnimationController _flipController;
   late Animation<double> _flipAnimation;
-  late AnimationController _slideController;
-  late Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
@@ -28,31 +27,21 @@ class _DeckScreenState extends State<DeckScreen> with TickerProviderStateMixin {
     _flipAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _flipController, curve: Curves.easeInOutBack),
     );
-    _slideController = AnimationController(vsync: this, duration: const Duration(milliseconds: 350));
-    _slideAnimation = Tween<Offset>(begin: Offset.zero, end: const Offset(1.5, 0)).animate(
-      CurvedAnimation(parent: _slideController, curve: Curves.easeInCubic),
-    );
-    _loadDueCards();
+    _loadCards();
   }
 
   @override
   void dispose() {
     _flipController.dispose();
-    _slideController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadDueCards() async {
-    final now = DateTime.now();
-    final cards = await isarDb.flashcards
-        .filter()
-        .nextReviewDateLessThan(now)
-        .or()
-        .nextReviewDateIsNull()
-        .findAll();
+  Future<void> _loadCards() async {
+    final cards = await isarDb.flashcards.where().findAll();
 
     setState(() {
-      _dueCards = cards;
+      _cards = cards;
+      _currentIndex = 0;
       _isLoading = false;
       _isFlipped = false;
     });
@@ -60,35 +49,33 @@ class _DeckScreenState extends State<DeckScreen> with TickerProviderStateMixin {
   }
 
   void _flipCard() {
-    if (_isFlipped) return;
+    if (_isFlipped) {
+      setState(() => _isFlipped = false);
+      _flipController.reverse();
+      return;
+    }
     setState(() => _isFlipped = true);
     _flipController.forward();
   }
 
-  Future<void> _gradeCard(int multiplierInHours) async {
-    if (_dueCards.isEmpty) return;
-
-    final card = _dueCards.first;
-    card.nextReviewDate = DateTime.now().add(Duration(hours: multiplierInHours));
-    if (multiplierInHours >= 24) {
-      card.consecutiveCorrect++;
-    } else {
-      card.consecutiveCorrect = 0;
-    }
-
-    await isarDb.writeTxn(() async {
-      await isarDb.flashcards.put(card);
-    });
-
-    // Slide out animation, then pop the card
-    await _slideController.forward();
+  void _goToCard(int delta) {
+    final nextIndex = _currentIndex + delta;
+    if (nextIndex < 0 || nextIndex >= _cards.length) return;
 
     setState(() {
-      _dueCards.removeAt(0);
+      _currentIndex = nextIndex;
       _isFlipped = false;
     });
     _flipController.reset();
-    _slideController.reset();
+  }
+
+  void _handleSwipe(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    if (velocity < -200) {
+      _goToCard(1);
+    } else if (velocity > 200) {
+      _goToCard(-1);
+    }
   }
 
   @override
@@ -102,14 +89,13 @@ class _DeckScreenState extends State<DeckScreen> with TickerProviderStateMixin {
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
           child: Column(
             children: [
-              // ─── Header ───
               Row(
                 children: [
                   Icon(Icons.style_rounded, color: theme.colorScheme.secondary, size: 28),
                   const SizedBox(width: 10),
                   Text('Review', style: theme.textTheme.titleLarge),
                   const Spacer(),
-                  if (!_isLoading && _dueCards.isNotEmpty)
+                  if (!_isLoading && _cards.isNotEmpty)
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                       decoration: BoxDecoration(
@@ -117,7 +103,7 @@ class _DeckScreenState extends State<DeckScreen> with TickerProviderStateMixin {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        '${_dueCards.length} left',
+                        '${_currentIndex + 1} / ${_cards.length}',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -127,14 +113,11 @@ class _DeckScreenState extends State<DeckScreen> with TickerProviderStateMixin {
                     ),
                 ],
               ),
-
               const SizedBox(height: 20),
-
-              // ─── Main Content ───
               Expanded(
                 child: _isLoading
                     ? const Center(child: CircularProgressIndicator())
-                    : _dueCards.isEmpty
+                    : _cards.isEmpty
                         ? _buildEmptyState(theme, isDark)
                         : _buildCardReview(theme, isDark),
               ),
@@ -145,7 +128,6 @@ class _DeckScreenState extends State<DeckScreen> with TickerProviderStateMixin {
     );
   }
 
-  // ─── Empty State ───
   Widget _buildEmptyState(ThemeData theme, bool isDark) {
     return Center(
       child: Column(
@@ -158,13 +140,13 @@ class _DeckScreenState extends State<DeckScreen> with TickerProviderStateMixin {
               color: theme.colorScheme.tertiary.withValues(alpha: isDark ? 0.12 : 0.08),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.celebration_rounded, size: 56, color: theme.colorScheme.tertiary),
+            child: Icon(Icons.auto_stories_rounded, size: 56, color: theme.colorScheme.tertiary),
           ),
           const SizedBox(height: 28),
-          Text('All caught up!', style: theme.textTheme.headlineMedium),
+          Text('No cards yet', style: theme.textTheme.headlineMedium),
           const SizedBox(height: 10),
           Text(
-            'No cards are due right now.\nGo scan a textbook page to add more!',
+            'Scan a textbook page to add flashcards,\nthen swipe through them here.',
             style: theme.textTheme.bodyMedium,
             textAlign: TextAlign.center,
           ),
@@ -173,108 +155,84 @@ class _DeckScreenState extends State<DeckScreen> with TickerProviderStateMixin {
     );
   }
 
-  // ─── Card Review ───
   Widget _buildCardReview(ThemeData theme, bool isDark) {
-    final currentCard = _dueCards.first;
+    final currentCard = _cards[_currentIndex];
     final article = currentCard.article ?? '';
     final genderColor = AppTheme.getGenderColor(article, isDark);
+    final canGoBack = _currentIndex > 0;
+    final canGoForward = _currentIndex < _cards.length - 1;
 
     return Column(
       children: [
-        // The Flashcard
         Expanded(
-          child: SlideTransition(
-            position: _slideAnimation,
-            child: GestureDetector(
-              onTap: _flipCard,
-              child: AnimatedBuilder(
-                animation: _flipAnimation,
-                builder: (context, child) {
-                  final angle = _flipAnimation.value * math.pi;
-                  final isFront = angle < math.pi / 2;
-                  return Transform(
-                    alignment: Alignment.center,
-                    transform: Matrix4.identity()
-                      ..setEntry(3, 2, 0.001)
-                      ..rotateY(angle),
-                    child: isFront
-                        ? _buildCardFront(theme, isDark, currentCard, genderColor)
-                        : Transform(
-                            alignment: Alignment.center,
-                            transform: Matrix4.identity()..rotateY(math.pi),
-                            child: _buildCardBack(theme, isDark, currentCard, genderColor),
-                          ),
-                  );
-                },
-              ),
+          child: GestureDetector(
+            onTap: _flipCard,
+            onHorizontalDragEnd: _handleSwipe,
+            child: AnimatedBuilder(
+              animation: _flipAnimation,
+              builder: (context, child) {
+                final angle = _flipAnimation.value * math.pi;
+                final isFront = angle < math.pi / 2;
+                return Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.identity()
+                    ..setEntry(3, 2, 0.001)
+                    ..rotateY(angle),
+                  child: isFront
+                      ? _buildCardFront(theme, isDark, currentCard, genderColor)
+                      : Transform(
+                          alignment: Alignment.center,
+                          transform: Matrix4.identity()..rotateY(math.pi),
+                          child: _buildCardBack(theme, isDark, currentCard, genderColor),
+                        ),
+                );
+              },
             ),
           ),
         ),
-
-        const SizedBox(height: 24),
-
-        // Grading Buttons (only when flipped)
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          child: _isFlipped
-              ? Row(
-                  key: const ValueKey('buttons'),
-                  children: [
-                    _GradeButton(
-                      label: 'Again',
-                      subtitle: 'Now',
-                      color: theme.colorScheme.error,
-                      isDark: isDark,
-                      onPressed: () => _gradeCard(0),
-                    ),
-                    const SizedBox(width: 8),
-                    _GradeButton(
-                      label: 'Hard',
-                      subtitle: '12h',
-                      color: const Color(0xFFF59E0B),
-                      isDark: isDark,
-                      onPressed: () => _gradeCard(12),
-                    ),
-                    const SizedBox(width: 8),
-                    _GradeButton(
-                      label: 'Good',
-                      subtitle: '1d',
-                      color: theme.colorScheme.tertiary,
-                      isDark: isDark,
-                      onPressed: () => _gradeCard(24),
-                    ),
-                    const SizedBox(width: 8),
-                    _GradeButton(
-                      label: 'Easy',
-                      subtitle: '4d',
-                      color: theme.colorScheme.primary,
-                      isDark: isDark,
-                      onPressed: () => _gradeCard(96),
-                    ),
-                  ],
-                )
-              : SizedBox(
-                  key: const ValueKey('hint'),
-                  height: 64,
-                  child: Center(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.touch_app_rounded, size: 18, color: theme.colorScheme.onSurfaceVariant),
-                        const SizedBox(width: 8),
-                        Text('Tap the card to reveal', style: theme.textTheme.bodyMedium),
-                      ],
-                    ),
-                  ),
-                ),
+        const SizedBox(height: 20),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.swipe_rounded, size: 18, color: theme.colorScheme.onSurfaceVariant),
+            const SizedBox(width: 8),
+            Text(
+              _isFlipped ? 'Swipe left or right to change cards' : 'Tap to reveal',
+              style: theme.textTheme.bodyMedium,
+            ),
+          ],
         ),
-
-        const SizedBox(height: 8),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            IconButton.filledTonal(
+              onPressed: canGoBack ? () => _goToCard(-1) : null,
+              icon: const Icon(Icons.chevron_left_rounded),
+              tooltip: 'Previous card',
+            ),
+            const Spacer(),
+            Text(
+              canGoBack && canGoForward
+                  ? 'Swipe to browse'
+                  : canGoBack
+                      ? 'Last card'
+                      : canGoForward
+                          ? 'First card'
+                          : 'Only card',
+              style: theme.textTheme.labelLarge,
+            ),
+            const Spacer(),
+            IconButton.filledTonal(
+              onPressed: canGoForward ? () => _goToCard(1) : null,
+              icon: const Icon(Icons.chevron_right_rounded),
+              tooltip: 'Next card',
+            ),
+          ],
+        ),
       ],
     );
   }
 
-  // ─── Card Front ───
   Widget _buildCardFront(ThemeData theme, bool isDark, Flashcard card, Color genderColor) {
     return Container(
       width: double.infinity,
@@ -293,7 +251,6 @@ class _DeckScreenState extends State<DeckScreen> with TickerProviderStateMixin {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Article badge
           if ((card.article ?? '').isNotEmpty)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -311,7 +268,6 @@ class _DeckScreenState extends State<DeckScreen> with TickerProviderStateMixin {
               ),
             ),
           const SizedBox(height: 16),
-          // Word
           Text(
             card.word ?? '',
             style: theme.textTheme.displayLarge?.copyWith(fontSize: 42),
@@ -322,7 +278,6 @@ class _DeckScreenState extends State<DeckScreen> with TickerProviderStateMixin {
     );
   }
 
-  // ─── Card Back ───
   Widget _buildCardBack(ThemeData theme, bool isDark, Flashcard card, Color genderColor) {
     return Container(
       width: double.infinity,
@@ -342,7 +297,6 @@ class _DeckScreenState extends State<DeckScreen> with TickerProviderStateMixin {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Full word with article
           Text(
             '${card.article ?? ''} ${card.word ?? ''}',
             style: TextStyle(
@@ -369,71 +323,12 @@ class _DeckScreenState extends State<DeckScreen> with TickerProviderStateMixin {
             ),
           ),
           const SizedBox(height: 20),
-          // Translation
           Text(
             card.translation ?? '',
             style: theme.textTheme.headlineMedium,
             textAlign: TextAlign.center,
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ─── Grade Button ───
-class _GradeButton extends StatelessWidget {
-  final String label;
-  final String subtitle;
-  final Color color;
-  final bool isDark;
-  final VoidCallback onPressed;
-
-  const _GradeButton({
-    required this.label,
-    required this.subtitle,
-    required this.color,
-    required this.isDark,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: isDark ? 0.15 : 0.08),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: color.withValues(alpha: 0.2)),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: color,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: color.withValues(alpha: 0.7),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
