@@ -3,6 +3,7 @@ import 'features/home/home_screen.dart';
 import 'features/scanner/scanner_screen.dart';
 import 'features/library/library_screen.dart';
 import 'features/deck/deck_screen.dart';
+import 'features/settings/settings_screen.dart';
 
 /// The app shell that manages bottom navigation between the 5 tabs.
 class AppShell extends StatefulWidget {
@@ -13,7 +14,7 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
-  int _currentIndex = 0;
+  int _currentIndex = 2;
 
   void _goToTab(int index) {
     setState(() => _currentIndex = index);
@@ -24,14 +25,15 @@ class _AppShellState extends State<AppShell> {
     final theme = Theme.of(context);
 
     final screens = [
-      HomeScreen(
-        onScanTap: () => _goToTab(1),
-        onLibraryTap: () => _goToTab(2),
-        onDeckTap: () => _goToTab(3),
-      ),
       const ScannerScreen(),
       const LibraryScreen(),
+      HomeScreen(
+        onScanTap: () => _goToTab(0),
+        onLibraryTap: () => _goToTab(1),
+        onDeckTap: () => _goToTab(3),
+      ),
       const DeckScreen(),
+      const SettingsScreen(),
     ];
 
     return Scaffold(
@@ -64,15 +66,9 @@ class _KlarifyBottomNav extends StatelessWidget {
 
   static const _items = [
     _NavItem(
-      icon: Icons.home_outlined,
-      activeIcon: Icons.home_rounded,
-      label: 'Home',
-    ),
-    _NavItem(
       icon: Icons.document_scanner_outlined,
       activeIcon: Icons.document_scanner_rounded,
       label: 'Scan',
-      isMiddle: true,
     ),
     _NavItem(
       icon: Icons.menu_book_outlined,
@@ -80,9 +76,20 @@ class _KlarifyBottomNav extends StatelessWidget {
       label: 'Library',
     ),
     _NavItem(
+      icon: Icons.home_outlined,
+      activeIcon: Icons.home_rounded,
+      label: 'Home',
+      isMiddle: true,
+    ),
+    _NavItem(
       icon: Icons.style_outlined,
       activeIcon: Icons.style_rounded,
-      label: 'Review',
+      label: 'Test',
+    ),
+    _NavItem(
+      icon: Icons.settings_outlined,
+      activeIcon: Icons.settings_rounded,
+      label: 'Settings',
     ),
   ];
 

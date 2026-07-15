@@ -104,7 +104,7 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
 
       setState(() {
         _phase = 'aiProcessing';
-        _statusMessage = 'AI is building your flashcards…';
+        _statusMessage = 'Klarify is building your flashcards…';
       });
 
       final List<Flashcard> generatedCards =
@@ -508,7 +508,7 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
         ),
         const SizedBox(height: 24),
         Text(
-          isAI ? 'AI is Thinking…' : 'Reading Page…',
+          isAI ? 'Klarify is Thinking…' : 'Reading Page…',
           style: theme.textTheme.titleMedium?.copyWith(
             color: scheme.onSurface,
           ),

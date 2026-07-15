@@ -102,31 +102,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               ),
                             ],
                           ),
-                          const Spacer(),
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                              );
-                            },
-                            child: Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: scheme.surfaceContainerHighest,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: scheme.outline.withValues(alpha: isDark ? 0.15 : 0.5),
-                                ),
-                              ),
-                              child: Icon(
-                                Icons.settings_rounded,
-                                color: scheme.onSurfaceVariant,
-                                size: 20,
-                              ),
-                            ),
-                          ),
                         ],
                       ),
 
@@ -219,7 +194,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       _ActionCard(
                         icon: Icons.camera_alt_rounded,
                         title: 'Scan Textbook',
-                        subtitle: 'Take a photo → AI builds flashcards',
+                        subtitle: 'Take a photo → Klarify builds flashcards',
                         iconColor: scheme.primary,
                         isDark: isDark,
                         onTap: widget.onScanTap,

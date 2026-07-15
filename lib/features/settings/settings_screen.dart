@@ -22,28 +22,6 @@ class SettingsScreen extends StatelessWidget {
               // Header
               Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: scheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: scheme.outline.withValues(
-                            alpha: isDark ? 0.15 : 0.5,
-                          ),
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.arrow_back_rounded,
-                        color: scheme.onSurface,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
                   Text('Settings', style: theme.textTheme.titleLarge),
                 ],
               ),
