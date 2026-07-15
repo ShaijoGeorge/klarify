@@ -2,12 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:isar/isar.dart';
 import '../../core/database/flashcard.dart';
 import '../../main.dart';
+import '../settings/settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback onScanTap;
+  final VoidCallback onLibraryTap;
   final VoidCallback onDeckTap;
+  final VoidCallback onStatsTap;
 
-  const HomeScreen({super.key, required this.onScanTap, required this.onDeckTap});
+  const HomeScreen({
+    super.key,
+    required this.onScanTap,
+    required this.onLibraryTap,
+    required this.onDeckTap,
+    required this.onStatsTap,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -104,6 +113,29 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               Text('Klarify', style: theme.textTheme.titleLarge),
                               Text('German Flashcards', style: theme.textTheme.bodyMedium),
                             ],
+                          ),
+                          const Spacer(),
+                          // Settings gear
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                              );
+                            },
+                            child: Container(
+                              width: 42,
+                              height: 42,
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                Icons.settings_rounded,
+                                color: theme.colorScheme.onSurfaceVariant,
+                                size: 22,
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -224,6 +256,34 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         ],
                         iconColor: theme.colorScheme.secondary,
                         onTap: widget.onDeckTap,
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      _ActionCard(
+                        icon: Icons.menu_book_rounded,
+                        title: 'Browse Library',
+                        subtitle: '$_totalCards word${_totalCards == 1 ? '' : 's'} in your collection',
+                        gradient: [
+                          theme.colorScheme.tertiary.withValues(alpha: isDark ? 0.15 : 0.08),
+                          theme.colorScheme.tertiary.withValues(alpha: isDark ? 0.05 : 0.02),
+                        ],
+                        iconColor: theme.colorScheme.tertiary,
+                        onTap: widget.onLibraryTap,
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      _ActionCard(
+                        icon: Icons.insights_rounded,
+                        title: 'View Progress',
+                        subtitle: '$_masteredCards card${_masteredCards == 1 ? '' : 's'} mastered so far',
+                        gradient: [
+                          const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.15 : 0.08),
+                          const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.05 : 0.02),
+                        ],
+                        iconColor: const Color(0xFFF59E0B),
+                        onTap: widget.onStatsTap,
                       ),
 
                       const SizedBox(height: 28),

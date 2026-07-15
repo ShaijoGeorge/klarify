@@ -27,23 +27,28 @@ const FlashcardSchema = CollectionSchema(
       name: r'consecutiveCorrect',
       type: IsarType.long,
     ),
-    r'nextReviewDate': PropertySchema(
+    r'createdAt': PropertySchema(
       id: 2,
+      name: r'createdAt',
+      type: IsarType.dateTime,
+    ),
+    r'nextReviewDate': PropertySchema(
+      id: 3,
       name: r'nextReviewDate',
       type: IsarType.dateTime,
     ),
     r'pluralForm': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'pluralForm',
       type: IsarType.string,
     ),
     r'translation': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'translation',
       type: IsarType.string,
     ),
     r'word': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'word',
       type: IsarType.string,
     )
@@ -64,6 +69,19 @@ const FlashcardSchema = CollectionSchema(
           name: r'word',
           type: IndexType.value,
           caseSensitive: true,
+        )
+      ],
+    ),
+    r'createdAt': IndexSchema(
+      id: -3433535483987302584,
+      name: r'createdAt',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'createdAt',
+          type: IndexType.value,
+          caseSensitive: false,
         )
       ],
     )
@@ -117,10 +135,11 @@ void _flashcardSerialize(
 ) {
   writer.writeString(offsets[0], object.article);
   writer.writeLong(offsets[1], object.consecutiveCorrect);
-  writer.writeDateTime(offsets[2], object.nextReviewDate);
-  writer.writeString(offsets[3], object.pluralForm);
-  writer.writeString(offsets[4], object.translation);
-  writer.writeString(offsets[5], object.word);
+  writer.writeDateTime(offsets[2], object.createdAt);
+  writer.writeDateTime(offsets[3], object.nextReviewDate);
+  writer.writeString(offsets[4], object.pluralForm);
+  writer.writeString(offsets[5], object.translation);
+  writer.writeString(offsets[6], object.word);
 }
 
 Flashcard _flashcardDeserialize(
@@ -132,11 +151,12 @@ Flashcard _flashcardDeserialize(
   final object = Flashcard();
   object.article = reader.readStringOrNull(offsets[0]);
   object.consecutiveCorrect = reader.readLong(offsets[1]);
+  object.createdAt = reader.readDateTimeOrNull(offsets[2]);
   object.id = id;
-  object.nextReviewDate = reader.readDateTimeOrNull(offsets[2]);
-  object.pluralForm = reader.readStringOrNull(offsets[3]);
-  object.translation = reader.readStringOrNull(offsets[4]);
-  object.word = reader.readStringOrNull(offsets[5]);
+  object.nextReviewDate = reader.readDateTimeOrNull(offsets[3]);
+  object.pluralForm = reader.readStringOrNull(offsets[4]);
+  object.translation = reader.readStringOrNull(offsets[5]);
+  object.word = reader.readStringOrNull(offsets[6]);
   return object;
 }
 
@@ -154,10 +174,12 @@ P _flashcardDeserializeProp<P>(
     case 2:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 3:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 4:
       return (reader.readStringOrNull(offset)) as P;
     case 5:
+      return (reader.readStringOrNull(offset)) as P;
+    case 6:
       return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -188,6 +210,14 @@ extension FlashcardQueryWhereSort
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         const IndexWhereClause.any(indexName: r'word'),
+      );
+    });
+  }
+
+  QueryBuilder<Flashcard, Flashcard, QAfterWhere> anyCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'createdAt'),
       );
     });
   }
@@ -415,6 +445,116 @@ extension FlashcardQueryWhere
       }
     });
   }
+
+  QueryBuilder<Flashcard, Flashcard, QAfterWhereClause> createdAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'createdAt',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<Flashcard, Flashcard, QAfterWhereClause> createdAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'createdAt',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<Flashcard, Flashcard, QAfterWhereClause> createdAtEqualTo(
+      DateTime? createdAt) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'createdAt',
+        value: [createdAt],
+      ));
+    });
+  }
+
+  QueryBuilder<Flashcard, Flashcard, QAfterWhereClause> createdAtNotEqualTo(
+      DateTime? createdAt) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'createdAt',
+              lower: [],
+              upper: [createdAt],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'createdAt',
+              lower: [createdAt],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'createdAt',
+              lower: [createdAt],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'createdAt',
+              lower: [],
+              upper: [createdAt],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<Flashcard, Flashcard, QAfterWhereClause> createdAtGreaterThan(
+    DateTime? createdAt, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'createdAt',
+        lower: [createdAt],
+        includeLower: include,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<Flashcard, Flashcard, QAfterWhereClause> createdAtLessThan(
+    DateTime? createdAt, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'createdAt',
+        lower: [],
+        upper: [createdAt],
+        includeUpper: include,
+      ));
+    });
+  }
+
+  QueryBuilder<Flashcard, Flashcard, QAfterWhereClause> createdAtBetween(
+    DateTime? lowerCreatedAt,
+    DateTime? upperCreatedAt, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'createdAt',
+        lower: [lowerCreatedAt],
+        includeLower: includeLower,
+        upper: [upperCreatedAt],
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension FlashcardQueryFilter
@@ -614,6 +754,77 @@ extension FlashcardQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
         property: r'consecutiveCorrect',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<Flashcard, Flashcard, QAfterFilterCondition> createdAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'createdAt',
+      ));
+    });
+  }
+
+  QueryBuilder<Flashcard, Flashcard, QAfterFilterCondition>
+      createdAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'createdAt',
+      ));
+    });
+  }
+
+  QueryBuilder<Flashcard, Flashcard, QAfterFilterCondition> createdAtEqualTo(
+      DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'createdAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Flashcard, Flashcard, QAfterFilterCondition>
+      createdAtGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'createdAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Flashcard, Flashcard, QAfterFilterCondition> createdAtLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'createdAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Flashcard, Flashcard, QAfterFilterCondition> createdAtBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'createdAt',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -1231,6 +1442,18 @@ extension FlashcardQuerySortBy on QueryBuilder<Flashcard, Flashcard, QSortBy> {
     });
   }
 
+  QueryBuilder<Flashcard, Flashcard, QAfterSortBy> sortByCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Flashcard, Flashcard, QAfterSortBy> sortByCreatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.desc);
+    });
+  }
+
   QueryBuilder<Flashcard, Flashcard, QAfterSortBy> sortByNextReviewDate() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'nextReviewDate', Sort.asc);
@@ -1304,6 +1527,18 @@ extension FlashcardQuerySortThenBy
       thenByConsecutiveCorrectDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'consecutiveCorrect', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Flashcard, Flashcard, QAfterSortBy> thenByCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Flashcard, Flashcard, QAfterSortBy> thenByCreatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.desc);
     });
   }
 
@@ -1383,6 +1618,12 @@ extension FlashcardQueryWhereDistinct
     });
   }
 
+  QueryBuilder<Flashcard, Flashcard, QDistinct> distinctByCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'createdAt');
+    });
+  }
+
   QueryBuilder<Flashcard, Flashcard, QDistinct> distinctByNextReviewDate() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'nextReviewDate');
@@ -1428,6 +1669,12 @@ extension FlashcardQueryProperty
   QueryBuilder<Flashcard, int, QQueryOperations> consecutiveCorrectProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'consecutiveCorrect');
+    });
+  }
+
+  QueryBuilder<Flashcard, DateTime?, QQueryOperations> createdAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'createdAt');
     });
   }
 

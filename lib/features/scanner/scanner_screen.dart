@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import '../../core/services/ai_service.dart';
 import '../../core/database/flashcard.dart';
+import '../../core/theme/app_theme.dart';
 import '../../main.dart';
 
 class ScannerScreen extends StatefulWidget {
@@ -16,10 +17,13 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
   final ImagePicker _picker = ImagePicker();
   final TextRecognizer _textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
 
-  // States: idle, scanning, aiProcessing, success, error
+  // States: idle, scanning, aiProcessing, scannedLibrary, test, success, error
   String _phase = 'idle';
   String _statusMessage = '';
   int _savedCount = 0;
+  List<Flashcard> _scannedCards = [];
+  int _testIndex = 0;
+  bool _showAnswer = false;
   late AnimationController _pulseController;
   late Animation<double> _pulseAnim;
 
@@ -64,10 +68,14 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
         await isarDb.writeTxn(() async {
           await isarDb.flashcards.putAll(generatedCards);
         });
+
         setState(() {
-          _phase = 'success';
+          _phase = 'scannedLibrary';
+          _scannedCards = generatedCards;
           _savedCount = generatedCards.length;
-          _statusMessage = 'Added $_savedCount flashcards to your deck!';
+          _testIndex = 0;
+          _showAnswer = false;
+          _statusMessage = 'Saved $_savedCount words from this scan.';
         });
       } else {
         setState(() {
@@ -83,11 +91,50 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
     }
   }
 
+  void _startTest() {
+    if (_scannedCards.isEmpty) return;
+    setState(() {
+      _phase = 'test';
+      _testIndex = 0;
+      _showAnswer = false;
+      _statusMessage = 'Flashcard test for this scan.';
+    });
+  }
+
+  void _toggleTestAnswer() {
+    setState(() => _showAnswer = !_showAnswer);
+  }
+
+  void _moveTest(int delta) {
+    if (_scannedCards.isEmpty) return;
+
+    setState(() {
+      final nextIndex = _testIndex + delta;
+      _testIndex = nextIndex < 0
+          ? 0
+          : nextIndex >= _scannedCards.length
+              ? _scannedCards.length - 1
+              : nextIndex;
+      _showAnswer = false;
+    });
+  }
+
+  void _finishTest() {
+    setState(() {
+      _phase = 'success';
+      _statusMessage = 'Test complete. $_savedCount words are saved in your library.';
+      _showAnswer = false;
+    });
+  }
+
   void _reset() {
     setState(() {
       _phase = 'idle';
       _statusMessage = '';
       _savedCount = 0;
+      _scannedCards = [];
+      _testIndex = 0;
+      _showAnswer = false;
     });
   }
 
@@ -134,6 +181,10 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
       case 'scanning':
       case 'aiProcessing':
         return _buildProcessingState(theme, isDark);
+      case 'scannedLibrary':
+        return _buildScannedLibraryState(theme, isDark);
+      case 'test':
+        return _buildTestState(theme, isDark);
       case 'success':
         return _buildSuccessState(theme, isDark);
       case 'error':
@@ -180,8 +231,7 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Text(
-            'Point your camera at a German textbook page. '
-            'Our AI will extract the vocabulary and create flashcards automatically.',
+            'Scan the assigned vocab page. The words save automatically, then you can take a quick test.',
             style: theme.textTheme.bodyMedium,
             textAlign: TextAlign.center,
           ),
@@ -193,8 +243,8 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
           height: 58,
           child: ElevatedButton.icon(
             onPressed: _scanTextbook,
-            icon: const Icon(Icons.auto_awesome_rounded, size: 22),
-            label: const Text('Start Scanning'),
+            icon: const Icon(Icons.bolt_rounded, size: 22),
+            label: const Text('Scan Vocab Page'),
             style: ElevatedButton.styleFrom(
               backgroundColor: theme.colorScheme.primary,
               foregroundColor: theme.colorScheme.onPrimary,
@@ -268,6 +318,308 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
     );
   }
 
+  // ─── Scanned Library: only the current scan ───
+  Widget _buildScannedLibraryState(ThemeData theme, bool isDark) {
+    return Column(
+      key: const ValueKey('scannedLibrary'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            OutlinedButton.icon(
+              onPressed: _reset,
+              icon: const Icon(Icons.arrow_back_rounded, size: 16),
+              label: const Text('Back'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                minimumSize: const Size(0, 36),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const Spacer(),
+            FilledButton.icon(
+              onPressed: _startTest,
+              icon: const Icon(Icons.quiz_rounded, size: 16),
+              label: const Text('Take Test'),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                minimumSize: const Size(0, 36),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Text(
+              'Just scanned vocabulary',
+              style: theme.textTheme.titleMedium,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(width: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Text(
+                '$_savedCount saved',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Expanded(
+          child: ListView.separated(
+            physics: const BouncingScrollPhysics(),
+            itemCount: _scannedCards.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final card = _scannedCards[index];
+              final article = card.article ?? '';
+              final genderColor = AppTheme.getGenderColor(article, isDark);
+
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: theme.colorScheme.outline.withValues(alpha: 0.15),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: genderColor.withValues(alpha: isDark ? 0.15 : 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: Text(
+                          article.isNotEmpty ? article : '-',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: genderColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(card.word ?? '', style: theme.textTheme.titleMedium),
+                          const SizedBox(height: 2),
+                          Text(card.translation ?? '', style: theme.textTheme.bodyMedium),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ─── Test: flashcards from only the current scan ───
+  Widget _buildTestState(ThemeData theme, bool isDark) {
+    final card = _scannedCards[_testIndex];
+    final article = card.article ?? '';
+    final genderColor = AppTheme.getGenderColor(article, isDark);
+    final canGoBack = _testIndex > 0;
+    final canGoForward = _testIndex < _scannedCards.length - 1;
+
+    return Column(
+      key: const ValueKey('test'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Text(
+                '${_testIndex + 1} / ${_scannedCards.length}',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                _statusMessage,
+                style: theme.textTheme.bodyMedium,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+        Expanded(
+          child: GestureDetector(
+            onTap: _toggleTestAnswer,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              child: Container(
+                key: ValueKey('${_testIndex}_$_showAnswer'),
+                width: double.infinity,
+                padding: const EdgeInsets.all(28),
+                decoration: BoxDecoration(
+                  gradient: _showAnswer
+                      ? null
+                      : AppTheme.getGenderGradient(card.article ?? '', isDark),
+                  color: _showAnswer ? theme.colorScheme.surface : null,
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(color: genderColor.withValues(alpha: 0.3), width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: genderColor.withValues(alpha: 0.14),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (article.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: genderColor.withValues(alpha: isDark ? 0.2 : 0.12),
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: Text(
+                          article,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: genderColor,
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 16),
+                    Text(
+                      card.word ?? '',
+                      style: theme.textTheme.displayLarge?.copyWith(fontSize: 40),
+                      textAlign: TextAlign.center,
+                    ),
+                    if (_showAnswer) ...[
+                      const SizedBox(height: 20),
+                      Container(
+                        width: 56,
+                        height: 2,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        card.translation ?? '',
+                        style: theme.textTheme.headlineMedium,
+                        textAlign: TextAlign.center,
+                      ),
+                      if ((card.pluralForm ?? '').isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        Text(
+                          'Plural: ${card.pluralForm}',
+                          style: theme.textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ] else ...[
+                      const SizedBox(height: 18),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.touch_app_rounded,
+                              size: 18, color: theme.colorScheme.onSurfaceVariant),
+                          const SizedBox(width: 8),
+                          Text('Tap to reveal', style: theme.textTheme.bodyMedium),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 18),
+        Row(
+          children: [
+            IconButton.filledTonal(
+              onPressed: canGoBack ? () => _moveTest(-1) : null,
+              icon: const Icon(Icons.chevron_left_rounded),
+              tooltip: 'Previous card',
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: canGoForward ? () => _moveTest(1) : _finishTest,
+                icon: Icon(canGoForward ? Icons.chevron_right_rounded : Icons.check_rounded,
+                    size: 20),
+                label: Text(canGoForward ? 'Next Card' : 'Finish Test'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            IconButton.filledTonal(
+              onPressed: () {
+                setState(() {
+                  _phase = 'scannedLibrary';
+                  _showAnswer = false;
+                });
+              },
+              icon: const Icon(Icons.list_rounded),
+              tooltip: 'Back to scanned vocabulary',
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        TextButton.icon(
+          onPressed: () {
+            setState(() {
+              _phase = 'scannedLibrary';
+              _showAnswer = false;
+            });
+          },
+          icon: const Icon(Icons.menu_book_rounded, size: 18),
+          label: const Text('Back to Scanned Vocab'),
+        ),
+      ],
+    );
+  }
+
   // ─── Success ───
   Widget _buildSuccessState(ThemeData theme, bool isDark) {
     return Column(
@@ -292,7 +644,9 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
         Text('Success!', style: theme.textTheme.headlineMedium),
         const SizedBox(height: 8),
         Text(
-          '$_savedCount flashcard${_savedCount == 1 ? '' : 's'} added to your deck.',
+          _statusMessage.isNotEmpty
+              ? _statusMessage
+              : '$_savedCount flashcard${_savedCount == 1 ? '' : 's'} saved to your library.',
           style: theme.textTheme.bodyLarge,
           textAlign: TextAlign.center,
         ),

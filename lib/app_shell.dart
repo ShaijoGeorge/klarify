@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'features/home/home_screen.dart';
 import 'features/scanner/scanner_screen.dart';
+import 'features/library/library_screen.dart';
 import 'features/deck/deck_screen.dart';
+import 'features/stats/stats_screen.dart';
 
-/// The app shell that manages bottom navigation between the 3 tabs.
+/// The app shell that manages bottom navigation between the 5 tabs.
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
 
@@ -25,10 +27,14 @@ class _AppShellState extends State<AppShell> {
     final screens = [
       HomeScreen(
         onScanTap: () => _goToTab(1),
-        onDeckTap: () => _goToTab(2),
+        onLibraryTap: () => _goToTab(2),
+        onDeckTap: () => _goToTab(3),
+        onStatsTap: () => _goToTab(4),
       ),
       const ScannerScreen(),
+      const LibraryScreen(),
       const DeckScreen(),
+      const StatsScreen(),
     ];
 
     return Scaffold(
@@ -53,7 +59,7 @@ class _AppShellState extends State<AppShell> {
           onDestinationSelected: _goToTab,
           destinations: const [
             NavigationDestination(
-              icon: Icon(Icons.home_rounded),
+              icon: Icon(Icons.home_outlined),
               selectedIcon: Icon(Icons.home_rounded),
               label: 'Home',
             ),
@@ -63,9 +69,19 @@ class _AppShellState extends State<AppShell> {
               label: 'Scan',
             ),
             NavigationDestination(
+              icon: Icon(Icons.menu_book_outlined),
+              selectedIcon: Icon(Icons.menu_book_rounded),
+              label: 'Library',
+            ),
+            NavigationDestination(
               icon: Icon(Icons.style_outlined),
               selectedIcon: Icon(Icons.style_rounded),
               label: 'Review',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.insights_outlined),
+              selectedIcon: Icon(Icons.insights_rounded),
+              label: 'Progress',
             ),
           ],
         ),

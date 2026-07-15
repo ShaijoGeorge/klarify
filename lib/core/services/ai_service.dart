@@ -56,7 +56,8 @@ class AiService {
           ..translation = item['translation']
           ..article = item['article']
           ..pluralForm = item['pluralForm']
-          ..nextReviewDate = DateTime.now(); // Ready to study immediately!
+          ..nextReviewDate = DateTime.now() // Ready to study immediately!
+          ..createdAt = DateTime.now(); // Track when it was scanned
       }).toList();
 
       return newCards;

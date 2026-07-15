@@ -28,4 +28,8 @@ class Flashcard {
 
   // How many times user has gotten it right in a row (helps calculate the next date)
   int consecutiveCorrect = 0; 
+
+  // When this card was first scanned/created
+  @Index()
+  DateTime? createdAt;
 }
