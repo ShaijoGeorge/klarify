@@ -5,7 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'core/theme/app_theme.dart';
 import 'core/database/flashcard.dart';
-import 'app_shell.dart';
+import 'features/splash/splash_screen.dart';
 
 // Global variables
 late Isar isarDb;
@@ -57,7 +57,7 @@ class KlarifyGermanApp extends StatelessWidget {
               theme: AppTheme.getLightTheme(currentFont),
               darkTheme: AppTheme.getDarkTheme(currentFont),
               themeMode: currentMode,
-              home: const AppShell(),
+              home: const SplashScreen(),
             );
           },
         );

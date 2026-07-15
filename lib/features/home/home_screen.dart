@@ -95,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               Text('Klarify', style: theme.textTheme.titleLarge),
                               const SizedBox(height: 2),
                               Text(
-                                'German Flashcards',
+                                'Learn German the smart way!',
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: scheme.onSurfaceVariant,
                                 ),
