@@ -1,7 +1,10 @@
-import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import '../../core/services/ai_service.dart';
+import '../../core/database/flashcard.dart';
+import '../../main.dart'; // To access our global isarDb variable!
 
 class ScannerScreen extends StatefulWidget {
   const ScannerScreen({super.key});
@@ -22,35 +25,46 @@ class _ScannerScreenState extends State<ScannerScreen> {
 
   // The function that does the magic
   Future<void> _scanTextbook() async {
-    // Open the camera and wait for the user to take a picture
     final XFile? photo = await _picker.pickImage(source: ImageSource.camera);
-    
-    // If they closed the camera without taking a picture, just stop.
     if (photo == null) return;
 
-    // Show a loading spinner so the user knows it's thinking
     setState(() {
       _isScanning = true;
+      _extractedText = "Reading textbook..."; 
     });
 
     try {
-      // Turn the photo into a format ML Kit can understand
+      // The Camera reads the text
       final inputImage = InputImage.fromFilePath(photo.path);
-      
-      // Send the photo to the Brain! It reads the text instantly.
       final RecognizedText recognizedText = await _textRecognizer.processImage(inputImage);
       
-      // Save what it read and update the screen
       setState(() {
-        _extractedText = recognizedText.text;
+        _extractedText = "Asking the AI to build flashcards...\n(This takes a few seconds)";
       });
+
+      // Send the messy text to our AI Brain
+      final List<Flashcard> generatedCards = await AiService.generateFlashcards(recognizedText.text);
+
+      if (generatedCards.isNotEmpty) {
+        // Save the perfect flashcards into the Isar Database!
+        await isarDb.writeTxn(() async {
+          await isarDb.flashcards.putAll(generatedCards);
+        });
+
+        setState(() {
+          _extractedText = "Success! Saved ${generatedCards.length} flashcards to your deck!";
+        });
+      } else {
+        setState(() {
+          _extractedText = "Oops! The AI couldn't find any clear German words.";
+        });
+      }
       
     } catch (e) {
       setState(() {
-        _extractedText = "Oops! Could not read the image.";
+        _extractedText = "Error: Something went wrong.";
       });
     } finally {
-      // Hide the loading spinner
       setState(() {
         _isScanning = false;
       });
@@ -105,7 +119,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                   // Adds a nice premium shadow
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                       spreadRadius: 2,
                     )
