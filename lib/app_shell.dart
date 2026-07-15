@@ -3,7 +3,6 @@ import 'features/home/home_screen.dart';
 import 'features/scanner/scanner_screen.dart';
 import 'features/library/library_screen.dart';
 import 'features/deck/deck_screen.dart';
-import 'features/stats/stats_screen.dart';
 
 /// The app shell that manages bottom navigation between the 5 tabs.
 class AppShell extends StatefulWidget {
@@ -29,12 +28,10 @@ class _AppShellState extends State<AppShell> {
         onScanTap: () => _goToTab(1),
         onLibraryTap: () => _goToTab(2),
         onDeckTap: () => _goToTab(3),
-        onStatsTap: () => _goToTab(4),
       ),
       const ScannerScreen(),
       const LibraryScreen(),
       const DeckScreen(),
-      const StatsScreen(),
     ];
 
     return Scaffold(
@@ -77,11 +74,6 @@ class _AppShellState extends State<AppShell> {
               icon: Icon(Icons.style_outlined),
               selectedIcon: Icon(Icons.style_rounded),
               label: 'Review',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.insights_outlined),
-              selectedIcon: Icon(Icons.insights_rounded),
-              label: 'Progress',
             ),
           ],
         ),

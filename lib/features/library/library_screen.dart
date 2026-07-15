@@ -16,6 +16,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
   List<Flashcard> _allCards = [];
   Map<String, List<Flashcard>> _groupedCards = {};
   bool _isLoading = true;
+  bool _isReverseStudy = false;
 
   String _activeGenderFilter = 'All';
   String _activeDateFilter = 'All Time';
@@ -139,13 +140,17 @@ class _LibraryScreenState extends State<LibraryScreen> {
   void _showFilterSheet(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final scheme = theme.colorScheme;
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: scheme.surface,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      shape: RoundedRectangleBorder(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        side: BorderSide(
+          color: scheme.outline.withValues(alpha: isDark ? 0.15 : 0.3),
+        ),
       ),
       builder: (ctx) {
         return StatefulBuilder(
@@ -157,11 +162,24 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Handle
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: scheme.outline.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
                     // Header
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Filters', style: theme.textTheme.titleLarge),
+                        Text('Filters', style: theme.textTheme.titleMedium),
                         TextButton(
                           onPressed: () {
                             setModalState(() {
@@ -174,15 +192,18 @@ class _LibraryScreenState extends State<LibraryScreen> {
                             });
                             _applyFilter();
                           },
-                          child: const Text('Reset'),
+                          child: Text(
+                            'Reset',
+                            style: TextStyle(color: scheme.primary),
+                          ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
                     
                     // Date Filter
-                    Text('Time Period', style: theme.textTheme.titleMedium),
-                    const SizedBox(height: 12),
+                    Text('Time Period', style: theme.textTheme.titleSmall),
+                    const SizedBox(height: 10),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -199,26 +220,25 @@ class _LibraryScreenState extends State<LibraryScreen> {
                             }
                           },
                           showCheckmark: false,
-                          selectedColor: theme.colorScheme.secondaryContainer,
+                          selectedColor: scheme.primaryContainer,
                           labelStyle: TextStyle(
-                            fontSize: 13,
+                            fontSize: 12,
                             fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                            color: isActive ? theme.colorScheme.secondary : theme.colorScheme.onSurfaceVariant,
+                            color: isActive ? scheme.primary : scheme.onSurfaceVariant,
                           ),
                           side: BorderSide(
-                            color: isActive ? theme.colorScheme.secondary : theme.colorScheme.outline.withValues(alpha: 0.3),
-                            width: isActive ? 1.5 : 1,
+                            color: isActive ? scheme.primary.withValues(alpha: 0.4) : scheme.outline.withValues(alpha: isDark ? 0.15 : 0.5),
                           ),
-                          backgroundColor: theme.colorScheme.surface,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          backgroundColor: scheme.surface,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         );
                       }).toList(),
                     ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 20),
 
                     // Gender Filter
-                    Text('Article (Gender)', style: theme.textTheme.titleMedium),
-                    const SizedBox(height: 12),
+                    Text('Article (Gender)', style: theme.textTheme.titleSmall),
+                    const SizedBox(height: 10),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -232,7 +252,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                         } else if (filter == 'das') {
                           chipColor = AppTheme.getGenderColor('das', isDark);
                         } else {
-                          chipColor = theme.colorScheme.primary;
+                          chipColor = scheme.primary;
                         }
 
                         return ChoiceChip(
@@ -246,35 +266,34 @@ class _LibraryScreenState extends State<LibraryScreen> {
                             }
                           },
                           showCheckmark: false,
-                          selectedColor: chipColor.withValues(alpha: isDark ? 0.25 : 0.15),
+                          selectedColor: chipColor.withValues(alpha: isDark ? 0.2 : 0.12),
                           labelStyle: TextStyle(
-                            fontSize: 13,
+                            fontSize: 12,
                             fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                            color: isActive ? chipColor : theme.colorScheme.onSurfaceVariant,
+                            color: isActive ? chipColor : scheme.onSurfaceVariant,
                           ),
                           side: BorderSide(
-                            color: isActive ? chipColor : theme.colorScheme.outline.withValues(alpha: 0.3),
-                            width: isActive ? 1.5 : 1,
+                            color: isActive ? chipColor.withValues(alpha: 0.4) : scheme.outline.withValues(alpha: isDark ? 0.15 : 0.5),
                           ),
-                          backgroundColor: theme.colorScheme.surface,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          backgroundColor: scheme.surface,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         );
                       }).toList(),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 24),
 
                     // Done Button
                     SizedBox(
                       width: double.infinity,
-                      height: 54,
-                      child: ElevatedButton(
+                      height: 50,
+                      child: FilledButton(
                         onPressed: () => Navigator.pop(ctx),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: theme.colorScheme.primary,
-                          foregroundColor: theme.colorScheme.onPrimary,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: scheme.primary,
+                          foregroundColor: scheme.onPrimary,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         ),
-                        child: const Text('Show Results', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                        child: const Text('Show Results', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                       ),
                     ),
                   ],
@@ -291,6 +310,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final scheme = theme.colorScheme;
 
     int totalFilteredCount = _groupedCards.values.fold(0, (sum, list) => sum + list.length);
     bool hasActiveFilters = _activeDateFilter != 'All Time' || _activeGenderFilter != 'All';
@@ -299,27 +319,67 @@ class _LibraryScreenState extends State<LibraryScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // ─── Header ───
+            // Header
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
               child: Row(
                 children: [
-                  Icon(Icons.menu_book_rounded, color: theme.colorScheme.primary, size: 28),
-                  const SizedBox(width: 10),
                   Text('Library', style: theme.textTheme.titleLarge),
                   const Spacer(),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _isReverseStudy = !_isReverseStudy;
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: scheme.surface,
+                        border: Border.all(color: scheme.outline.withValues(alpha: isDark ? 0.15 : 0.5)),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _isReverseStudy ? 'EN' : 'DE',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: scheme.primary,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(Icons.swap_horiz_rounded, size: 14, color: scheme.primary),
+                          const SizedBox(width: 4),
+                          Text(
+                            _isReverseStudy ? 'DE' : 'EN',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: scheme.primary,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(20),
+                      color: scheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
                       '$totalFilteredCount cards',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.primary,
+                        color: scheme.primary,
                       ),
                     ),
                   ),
@@ -329,46 +389,54 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
             const SizedBox(height: 16),
 
-            // ─── Search Bar & Filter Button ───
+            // Search Bar & Filter Button
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Row(
                 children: [
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.2)),
+                        color: scheme.surface,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: scheme.outline.withValues(alpha: isDark ? 0.15 : 0.5),
+                        ),
                       ),
                       child: TextField(
                         controller: _searchController,
                         style: theme.textTheme.bodyLarge,
                         decoration: InputDecoration(
-                          hintText: 'Search words or translations…',
-                          hintStyle: theme.textTheme.bodyMedium,
-                          prefixIcon: Icon(Icons.search_rounded, color: theme.colorScheme.onSurfaceVariant),
+                          hintText: 'Search words…',
+                          hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                          prefixIcon: Icon(Icons.search_rounded, color: scheme.onSurfaceVariant, size: 20),
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 13),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  // Filter Button
+                  const SizedBox(width: 10),
                   GestureDetector(
                     onTap: () => _showFilterSheet(context),
                     child: Container(
-                      width: 50,
-                      height: 50,
+                      width: 46,
+                      height: 46,
                       decoration: BoxDecoration(
-                        color: hasActiveFilters ? theme.colorScheme.primary : theme.colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.2)),
+                        color: hasActiveFilters ? scheme.primary : scheme.surface,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: hasActiveFilters
+                              ? scheme.primary
+                              : scheme.outline.withValues(alpha: isDark ? 0.15 : 0.5),
+                        ),
                       ),
                       child: Icon(
                         hasActiveFilters ? Icons.filter_list_off_rounded : Icons.tune_rounded,
-                        color: hasActiveFilters ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant,
+                        color: hasActiveFilters ? scheme.onPrimary : scheme.onSurfaceVariant,
+                        size: 20,
                       ),
                     ),
                   ),
@@ -376,13 +444,13 @@ class _LibraryScreenState extends State<LibraryScreen> {
               ),
             ),
 
-            // ─── Active Filter Chips ───
+            // Active Filter Chips
             if (hasActiveFilters) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: SizedBox(
-                  height: 36,
+                  height: 32,
                   child: ListView(
                     scrollDirection: Axis.horizontal,
                     children: [
@@ -395,7 +463,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                           },
                         ),
                       if (_activeDateFilter != 'All Time' && _activeGenderFilter != 'All')
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                       if (_activeGenderFilter != 'All')
                         _ActiveFilterChip(
                           label: _activeGenderFilter,
@@ -412,9 +480,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
               ),
             ],
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
 
-            // ─── Card List ───
+            // Card List
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
@@ -422,7 +490,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                       ? _buildEmptyState(theme, isDark)
                       : ListView.builder(
                           physics: const BouncingScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+                          padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
                           itemCount: _groupedCards.length,
                           itemBuilder: (context, index) {
                             final dateKey = _groupedCards.keys.elementAt(index);
@@ -433,20 +501,22 @@ class _LibraryScreenState extends State<LibraryScreen> {
                               children: [
                                 // Date Header
                                 Padding(
-                                  padding: const EdgeInsets.only(top: 16, bottom: 8, left: 4),
+                                  padding: const EdgeInsets.only(top: 14, bottom: 8, left: 4),
                                   child: Text(
                                     dateKey,
-                                    style: theme.textTheme.titleMedium?.copyWith(
-                                      color: theme.colorScheme.onSurfaceVariant,
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: scheme.onSurfaceVariant,
+                                      letterSpacing: 0.5,
                                     ),
                                   ),
                                 ),
                                 // Cards for this date
                                 ...cards.map((card) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 8),
+                                  padding: const EdgeInsets.only(bottom: 6),
                                   child: _WordTile(
                                     card: card,
                                     isDark: isDark,
+                                    isReverseStudy: _isReverseStudy,
                                     onDelete: () => _deleteCard(card),
                                   ),
                                 )),
@@ -462,44 +532,45 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   Widget _buildEmptyState(ThemeData theme, bool isDark) {
+    final scheme = theme.colorScheme;
     final hasSearch = _searchController.text.isNotEmpty || _activeGenderFilter != 'All' || _activeDateFilter != 'All Time';
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
               hasSearch ? Icons.search_off_rounded : Icons.menu_book_rounded,
-              size: 44,
-              color: theme.colorScheme.onSurfaceVariant,
+              size: 64,
+              color: scheme.onSurfaceVariant,
             ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            hasSearch ? 'No matches found' : 'Library is empty',
-            style: theme.textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            hasSearch
-                ? 'Try a different search or filter.'
-                : 'Scan a textbook page to add cards!',
-            style: theme.textTheme.bodyMedium,
-            textAlign: TextAlign.center,
-          ),
-        ],
+            const SizedBox(height: 16),
+            Text(
+              hasSearch ? 'No matches found' : 'Library is empty',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: scheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              hasSearch
+                  ? 'Try a different search or filter.'
+                  : 'Scan a textbook page to add cards!',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-// ─── Active Filter Chip ───
+// Active Filter Chip
 class _ActiveFilterChip extends StatelessWidget {
   final String label;
   final bool isGender;
@@ -515,22 +586,22 @@ class _ActiveFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final scheme = Theme.of(context).colorScheme;
     
-    Color color = theme.colorScheme.secondary;
+    Color color = scheme.secondary;
     if (isGender) {
       if (label == 'der') color = AppTheme.getGenderColor('der', isDark);
       else if (label == 'die') color = AppTheme.getGenderColor('die', isDark);
       else if (label == 'das') color = AppTheme.getGenderColor('das', isDark);
-      else color = theme.colorScheme.primary;
+      else color = scheme.primary;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: isDark ? 0.2 : 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        color: color.withValues(alpha: isDark ? 0.15 : 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -538,15 +609,15 @@ class _ActiveFilterChip extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.w700,
               color: color,
             ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 4),
           GestureDetector(
             onTap: onClear,
-            child: Icon(Icons.close_rounded, size: 16, color: color),
+            child: Icon(Icons.close_rounded, size: 14, color: color),
           ),
         ],
       ),
@@ -555,17 +626,24 @@ class _ActiveFilterChip extends StatelessWidget {
 }
 
 
-// ─── Individual Word Tile ───
+// Individual Word Tile
 class _WordTile extends StatelessWidget {
   final Flashcard card;
   final bool isDark;
+  final bool isReverseStudy;
   final VoidCallback onDelete;
 
-  const _WordTile({required this.card, required this.isDark, required this.onDelete});
+  const _WordTile({
+    required this.card,
+    required this.isDark,
+    required this.isReverseStudy,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final article = card.article ?? '';
     final genderColor = AppTheme.getGenderColor(article, isDark);
     final streakCount = card.consecutiveCorrect;
@@ -578,53 +656,64 @@ class _WordTile extends StatelessWidget {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 24),
         decoration: BoxDecoration(
-          color: theme.colorScheme.error.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(18),
+          color: scheme.error.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(16),
         ),
-        child: Icon(Icons.delete_outline_rounded, color: theme.colorScheme.error),
+        child: Icon(Icons.delete_outline_rounded, color: scheme.error),
       ),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.15)),
+          color: scheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: scheme.outline.withValues(alpha: isDark ? 0.15 : 0.5),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0x08000000),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
+            ),
+          ],
         ),
         child: Row(
           children: [
-            // Gender color dot
+            // Gender color indicator
             Container(
-              width: 42,
-              height: 42,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
-                color: genderColor.withValues(alpha: isDark ? 0.15 : 0.1),
-                borderRadius: BorderRadius.circular(12),
+                color: genderColor.withValues(alpha: isDark ? 0.15 : 0.08),
+                borderRadius: BorderRadius.circular(10),
               ),
               child: Center(
                 child: Text(
                   article.isNotEmpty ? article : '—',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: FontWeight.w700,
                     color: genderColor,
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
             // Word + Translation
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    card.word ?? '',
-                    style: theme.textTheme.titleMedium,
+                    isReverseStudy ? (card.translation ?? '') : (card.word ?? ''),
+                    style: theme.textTheme.titleSmall,
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    card.translation ?? '',
-                    style: theme.textTheme.bodyMedium,
+                    isReverseStudy ? (card.word ?? '') : (card.translation ?? ''),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -632,23 +721,23 @@ class _WordTile extends StatelessWidget {
             // Streak indicator
             if (streakCount > 0)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.tertiary.withValues(alpha: isDark ? 0.15 : 0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  color: scheme.tertiary.withValues(alpha: isDark ? 0.15 : 0.08),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.local_fire_department_rounded,
-                        size: 14, color: theme.colorScheme.tertiary),
+                        size: 12, color: scheme.tertiary),
                     const SizedBox(width: 3),
                     Text(
                       '$streakCount',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: theme.colorScheme.tertiary,
+                        color: scheme.tertiary,
                       ),
                     ),
                   ],

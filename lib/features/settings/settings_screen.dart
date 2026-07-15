@@ -9,29 +9,33 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final scheme = theme.colorScheme;
 
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ─── Header ───
+              // Header
               Row(
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
                     child: Container(
-                      width: 42,
-                      height: 42,
+                      width: 40,
+                      height: 40,
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerHighest,
+                        color: scheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: scheme.outline.withValues(alpha: isDark ? 0.15 : 0.5),
+                        ),
                       ),
                       child: Icon(Icons.arrow_back_rounded,
-                          color: theme.colorScheme.onSurface, size: 22),
+                          color: scheme.onSurface, size: 20),
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -41,28 +45,30 @@ class SettingsScreen extends StatelessWidget {
 
               const SizedBox(height: 28),
 
-              // ─── General Section ───
+              // General Section
               _SectionHeader(title: 'GENERAL'),
               const SizedBox(height: 10),
 
               _SettingsGroup(
+                isDark: isDark,
                 children: [
                   _SettingsTile(
                     icon: Icons.palette_rounded,
                     title: 'Theme',
                     subtitle: 'Follows system setting',
+                    isDark: isDark,
                     trailing: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(10),
+                        color: scheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         isDark ? 'Dark' : 'Light',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.primary,
+                          color: scheme.primary,
                         ),
                       ),
                     ),
@@ -71,25 +77,28 @@ class SettingsScreen extends StatelessWidget {
                     icon: Icons.translate_rounded,
                     title: 'Language',
                     subtitle: 'English',
+                    isDark: isDark,
                     trailing: Icon(Icons.chevron_right_rounded,
-                        color: theme.colorScheme.onSurfaceVariant, size: 22),
+                        color: scheme.onSurfaceVariant, size: 20),
                   ),
                 ],
               ),
 
               const SizedBox(height: 24),
 
-              // ─── Data Section ───
+              // Data Section
               _SectionHeader(title: 'DATA'),
               const SizedBox(height: 10),
 
               _SettingsGroup(
+                isDark: isDark,
                 children: [
                   _SettingsTile(
                     icon: Icons.delete_sweep_rounded,
                     title: 'Clear All Flashcards',
                     subtitle: 'Delete all saved cards from the database',
-                    iconColor: theme.colorScheme.error,
+                    iconColor: scheme.error,
+                    isDark: isDark,
                     onTap: () => _showClearDialog(context),
                   ),
                 ],
@@ -97,58 +106,44 @@ class SettingsScreen extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              // ─── About Section ───
+              // About Section
               _SectionHeader(title: 'ABOUT'),
               const SizedBox(height: 10),
 
               _SettingsGroup(
+                isDark: isDark,
                 children: [
                   _SettingsTile(
                     icon: Icons.info_outline_rounded,
                     title: 'App Version',
                     subtitle: '1.0.0',
+                    isDark: isDark,
                   ),
                   _SettingsTile(
                     icon: Icons.code_rounded,
                     title: 'Built With',
                     subtitle: 'Flutter · Isar · Gemini AI',
+                    isDark: isDark,
                   ),
                 ],
               ),
 
               const SizedBox(height: 32),
 
-              // ─── Footer ───
+              // Footer
               Center(
                 child: Column(
                   children: [
-                    Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            theme.colorScheme.primary,
-                            theme.colorScheme.secondary,
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Icon(
-                        Icons.auto_stories_rounded,
-                        color: theme.colorScheme.onPrimary,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
                     Text(
                       'Klarify German',
                       style: theme.textTheme.titleMedium,
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Made with ❤️ for German learners',
-                      style: theme.textTheme.bodyMedium,
+                      'Made with ❤️ by Shaijo George',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -162,20 +157,32 @@ class SettingsScreen extends StatelessWidget {
 
   void _showClearDialog(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text('Clear All Flashcards?'),
-        content: const Text(
+        backgroundColor: scheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: scheme.outline.withValues(alpha: isDark ? 0.15 : 0.5),
+          ),
+        ),
+        title: Text('Clear All Flashcards?', style: theme.textTheme.titleMedium),
+        content: Text(
           'This will permanently delete all your saved flashcards. This action cannot be undone.',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
+            child: Text('Cancel', style: TextStyle(color: scheme.onSurfaceVariant)),
           ),
-          ElevatedButton(
+          FilledButton(
             onPressed: () async {
               await isarDb.writeTxn(() async {
                 await isarDb.flashcards.clear();
@@ -191,8 +198,8 @@ class SettingsScreen extends StatelessWidget {
                 );
               }
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: theme.colorScheme.error,
+            style: FilledButton.styleFrom(
+              backgroundColor: scheme.error,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
@@ -204,41 +211,55 @@ class SettingsScreen extends StatelessWidget {
   }
 }
 
-// ─── Section Header ───
+// Section Header
 class _SectionHeader extends StatelessWidget {
   final String title;
   const _SectionHeader({required this.title});
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Text(
       title,
-      style: Theme.of(context).textTheme.labelSmall?.copyWith(letterSpacing: 1.2),
+      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+        letterSpacing: 1.2,
+        color: scheme.onSurfaceVariant,
+      ),
     );
   }
 }
 
-// ─── Settings Group ───
+// Settings Group
 class _SettingsGroup extends StatelessWidget {
   final List<Widget> children;
-  const _SettingsGroup({required this.children});
+  final bool isDark;
+  const _SettingsGroup({required this.children, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.15)),
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: scheme.outline.withValues(alpha: isDark ? 0.15 : 0.5),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0x08000000),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: Column(
         children: List.generate(children.length * 2 - 1, (index) {
           if (index.isOdd) {
             return Divider(
               height: 1,
-              indent: 58,
-              color: theme.colorScheme.outline.withValues(alpha: 0.12),
+              indent: 56,
+              color: scheme.outline.withValues(alpha: isDark ? 0.1 : 0.3),
             );
           }
           return children[index ~/ 2];
@@ -248,7 +269,7 @@ class _SettingsGroup extends StatelessWidget {
   }
 }
 
-// ─── Settings Tile ───
+// Settings Tile
 class _SettingsTile extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -256,11 +277,13 @@ class _SettingsTile extends StatelessWidget {
   final Color? iconColor;
   final Widget? trailing;
   final VoidCallback? onTap;
+  final bool isDark;
 
   const _SettingsTile({
     required this.icon,
     required this.title,
     required this.subtitle,
+    required this.isDark,
     this.iconColor,
     this.trailing,
     this.onTap,
@@ -269,23 +292,23 @@ class _SettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final color = iconColor ?? theme.colorScheme.primary;
+    final scheme = theme.colorScheme;
+    final color = iconColor ?? scheme.primary;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
               Container(
-                width: 38,
-                height: 38,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: isDark ? 0.15 : 0.1),
+                  color: color.withValues(alpha: isDark ? 0.15 : 0.08),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: color, size: 18),
@@ -295,9 +318,14 @@ class _SettingsTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: theme.textTheme.titleMedium?.copyWith(fontSize: 15)),
+                    Text(title, style: theme.textTheme.titleSmall),
                     const SizedBox(height: 2),
-                    Text(subtitle, style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13)),
+                    Text(
+                      subtitle,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
                   ],
                 ),
               ),

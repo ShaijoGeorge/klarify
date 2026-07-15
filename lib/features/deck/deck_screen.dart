@@ -17,6 +17,7 @@ class _DeckScreenState extends State<DeckScreen> with SingleTickerProviderStateM
   int _currentIndex = 0;
   bool _isLoading = true;
   bool _isFlipped = false;
+  bool _isReverseStudy = false; // false = DE->EN, true = EN->DE
   late AnimationController _flipController;
   late Animation<double> _flipAnimation;
   late PageController _pageController;
@@ -24,7 +25,7 @@ class _DeckScreenState extends State<DeckScreen> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
+    _pageController = PageController(viewportFraction: 0.92);
     _flipController = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
     _flipAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _flipController, curve: Curves.easeInOutBack),
@@ -76,82 +77,138 @@ class _DeckScreenState extends State<DeckScreen> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final scheme = theme.colorScheme;
 
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-          child: Column(
-            children: [
-              Row(
+        child: Column(
+          children: [
+            // ── Header ──
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+              child: Row(
                 children: [
-                  Icon(Icons.style_rounded, color: theme.colorScheme.secondary, size: 28),
-                  const SizedBox(width: 10),
                   Text('Review', style: theme.textTheme.titleLarge),
                   const Spacer(),
-                  if (!_isLoading && _cards.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        '${_currentIndex + 1} / ${_cards.length}',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.primary,
+                  if (!_isLoading && _cards.isNotEmpty) ...[
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _isReverseStudy = !_isReverseStudy;
+                          _isFlipped = false;
+                        });
+                        _flipController.reset();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: scheme.surface,
+                          border: Border.all(color: scheme.outline.withValues(alpha: isDark ? 0.15 : 0.5)),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _isReverseStudy ? 'EN' : 'DE',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: scheme.primary,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(Icons.swap_horiz_rounded, size: 14, color: scheme.primary),
+                            const SizedBox(width: 4),
+                            Text(
+                              _isReverseStudy ? 'DE' : 'EN',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: scheme.primary,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      child: Container(
+                        key: ValueKey(_currentIndex),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: scheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${_currentIndex + 1} / ${_cards.length}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: scheme.primary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
-              const SizedBox(height: 20),
-              Expanded(
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _cards.isEmpty
-                        ? _buildEmptyState(theme, isDark)
-                        : _buildCardReview(theme, isDark),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 16),
+
+            // ── Body ──
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _cards.isEmpty
+                      ? _buildEmptyState(theme, isDark)
+                      : _buildCardReview(theme, isDark),
+            ),
+          ],
         ),
       ),
     );
   }
 
+  // Empty State (icon + title + subtitle)
   Widget _buildEmptyState(ThemeData theme, bool isDark) {
+    final scheme = theme.colorScheme;
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.tertiary.withValues(alpha: isDark ? 0.12 : 0.08),
-              shape: BoxShape.circle,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.style_rounded, size: 64, color: scheme.onSurfaceVariant),
+            const SizedBox(height: 16),
+            Text(
+              'No cards yet',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: scheme.onSurface,
+              ),
             ),
-            child: Icon(Icons.auto_stories_rounded, size: 56, color: theme.colorScheme.tertiary),
-          ),
-          const SizedBox(height: 28),
-          Text('No cards yet', style: theme.textTheme.headlineMedium),
-          const SizedBox(height: 10),
-          Text(
-            'Scan a textbook page to add flashcards,\nthen swipe through them here.',
-            style: theme.textTheme.bodyMedium,
-            textAlign: TextAlign.center,
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              'Scan a textbook page to add flashcards,\nthen swipe through them here.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
+  // Card Review
   Widget _buildCardReview(ThemeData theme, bool isDark) {
-    final canGoBack = _currentIndex > 0;
-    final canGoForward = _currentIndex < _cards.length - 1;
+    final scheme = theme.colorScheme;
 
     return Column(
       children: [
@@ -173,7 +230,7 @@ class _DeckScreenState extends State<DeckScreen> with SingleTickerProviderStateM
               final genderColor = AppTheme.getGenderColor(article, isDark);
 
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
                 child: GestureDetector(
                   onTap: () {
                     if (index == _currentIndex) _flipCard();
@@ -203,64 +260,102 @@ class _DeckScreenState extends State<DeckScreen> with SingleTickerProviderStateM
             },
           ),
         ),
-        const SizedBox(height: 20),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.swipe_rounded, size: 18, color: theme.colorScheme.onSurfaceVariant),
-            const SizedBox(width: 8),
-            Text(
-              _isFlipped ? 'Swipe left or right to change cards' : 'Tap to reveal',
-              style: theme.textTheme.bodyMedium,
-            ),
-          ],
+
+        // Hint Row
+        Padding(
+          padding: const EdgeInsets.only(bottom: 24, top: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                _isFlipped ? Icons.swipe_rounded : Icons.touch_app_rounded,
+                size: 16,
+                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                _isFlipped ? 'Swipe to browse' : 'Tap to reveal',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
   }
 
   Widget _buildCardFront(ThemeData theme, bool isDark, Flashcard card, Color genderColor) {
+    final scheme = theme.colorScheme;
+    
+    // Front styling depends on direction
+    final gradient = _isReverseStudy ? null : AppTheme.getGenderGradient(card.article ?? '', isDark);
+    final bgColor = _isReverseStudy ? scheme.surface : null;
+    final borderColor = _isReverseStudy 
+        ? scheme.outline.withValues(alpha: isDark ? 0.15 : 0.5) 
+        : genderColor.withValues(alpha: isDark ? 0.25 : 0.18);
+    final shadowColor = _isReverseStudy
+        ? const Color(0x08000000)
+        : genderColor.withValues(alpha: 0.08);
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        gradient: AppTheme.getGenderGradient(card.article ?? '', isDark),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: genderColor.withValues(alpha: 0.3), width: 2),
+        color: bgColor,
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
-            color: genderColor.withValues(alpha: 0.15),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+            color: const Color(0x08000000),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
           ),
+          if (!_isReverseStudy)
+            BoxShadow(
+              color: shadowColor,
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
         ],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if ((card.article ?? '').isNotEmpty)
+          if (!_isReverseStudy && (card.article ?? '').isNotEmpty)
+            // Article chip (German -> English)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               decoration: BoxDecoration(
-                color: genderColor.withValues(alpha: isDark ? 0.2 : 0.12),
-                borderRadius: BorderRadius.circular(20),
+                color: genderColor.withValues(alpha: isDark ? 0.18 : 0.10),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 card.article!,
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: genderColor,
+                  letterSpacing: 0.5,
                 ),
               ),
             ),
-          const SizedBox(height: 16),
+          if (!_isReverseStudy && (card.article ?? '').isNotEmpty)
+            const SizedBox(height: 16),
+
+          // Main Word
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            padding: const EdgeInsets.symmetric(horizontal: 24),
             child: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                card.word ?? '',
-                style: theme.textTheme.displayLarge?.copyWith(fontSize: 42),
+                _isReverseStudy ? (card.translation ?? '') : (card.word ?? ''),
+                style: theme.textTheme.displayLarge?.copyWith(
+                  fontSize: 42,
+                  letterSpacing: -0.5,
+                  color: _isReverseStudy ? scheme.onSurface : null,
+                ),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -271,61 +366,117 @@ class _DeckScreenState extends State<DeckScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildCardBack(ThemeData theme, bool isDark, Flashcard card, Color genderColor) {
+    final scheme = theme.colorScheme;
+    
+    // Back styling depends on direction
+    final gradient = _isReverseStudy ? AppTheme.getGenderGradient(card.article ?? '', isDark) : null;
+    final bgColor = _isReverseStudy ? null : scheme.surface;
+    final borderColor = _isReverseStudy 
+        ? genderColor.withValues(alpha: isDark ? 0.25 : 0.18)
+        : scheme.outline.withValues(alpha: isDark ? 0.15 : 0.5);
+    final shadowColor = _isReverseStudy
+        ? genderColor.withValues(alpha: 0.08)
+        : const Color(0x08000000);
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 28),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: genderColor.withValues(alpha: 0.3), width: 2),
+        color: bgColor,
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
-            color: genderColor.withValues(alpha: 0.15),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+            color: const Color(0x08000000),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
           ),
+          if (_isReverseStudy)
+            BoxShadow(
+              color: shadowColor,
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
         ],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          // Top half (German in DE->EN, English in EN->DE)
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
-              '${card.article ?? ''} ${card.word ?? ''}',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w700,
-                color: genderColor,
-              ),
+              _isReverseStudy 
+                  ? (card.translation ?? '')
+                  : '${card.article ?? ''} ${card.word ?? ''}'.trim(),
+              style: _isReverseStudy
+                  ? theme.textTheme.headlineMedium?.copyWith(color: scheme.onSurface)
+                  : TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w700,
+                      color: genderColor,
+                    ),
               textAlign: TextAlign.center,
             ),
           ),
-          if ((card.pluralForm ?? '').isNotEmpty) ...[
+
+          // Plural form (only show if German is on top, DE->EN)
+          if (!_isReverseStudy && (card.pluralForm ?? '').isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(
               'Plural: ${card.pluralForm}',
-              style: theme.textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontStyle: FontStyle.italic,
+                color: scheme.onSurfaceVariant,
+              ),
             ),
           ],
-          const SizedBox(height: 20),
-          Container(
-            width: 60,
-            height: 2,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.outline.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(2),
+
+          // Divider
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Container(
+              width: 40,
+              height: 2,
+              decoration: BoxDecoration(
+                color: scheme.outline.withValues(alpha: isDark ? 0.15 : 0.3),
+                borderRadius: BorderRadius.circular(1),
+              ),
             ),
           ),
-          const SizedBox(height: 20),
+
+          // Bottom half (English in DE->EN, German in EN->DE)
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
-              card.translation ?? '',
-              style: theme.textTheme.headlineMedium,
+              _isReverseStudy
+                  ? '${card.article ?? ''} ${card.word ?? ''}'.trim()
+                  : (card.translation ?? ''),
+              style: _isReverseStudy
+                  ? theme.textTheme.displayLarge?.copyWith(
+                      fontSize: 42,
+                      letterSpacing: -0.5,
+                      color: theme.textTheme.displayLarge?.color,
+                    )
+                  : theme.textTheme.headlineMedium?.copyWith(
+                      color: scheme.onSurface,
+                    ),
               textAlign: TextAlign.center,
             ),
           ),
+          
+          // Plural form (only show if German is on bottom, EN->DE)
+          if (_isReverseStudy && (card.pluralForm ?? '').isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              'Plural: ${card.pluralForm}',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontStyle: FontStyle.italic,
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+          ],
         ],
       ),
     );

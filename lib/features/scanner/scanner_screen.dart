@@ -203,15 +203,12 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
           child: Column(
             children: [
-              // ─── Header ───
+              // Header
               Row(
                 children: [
-                  Icon(Icons.document_scanner_rounded,
-                      color: theme.colorScheme.primary, size: 28),
-                  const SizedBox(width: 10),
                   Text('Scanner', style: theme.textTheme.titleLarge),
                 ],
               ),
@@ -261,67 +258,57 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
       children: [
         const Spacer(flex: 2),
         // Big camera icon area
-        Container(
-          width: 140,
-          height: 140,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isDark
-                  ? [const Color(0xFF1E3A5F), const Color(0xFF2E1065)]
-                  : [const Color(0xFFDBEAFE), const Color(0xFFEDE9FE)],
-            ),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            Icons.camera_alt_rounded,
-            size: 56,
-            color: theme.colorScheme.primary,
-          ),
+        Icon(
+          Icons.camera_alt_rounded,
+          size: 64,
+          color: theme.colorScheme.onSurfaceVariant,
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 16),
         Text(
           'Scan Textbook Pages',
-          style: theme.textTheme.headlineMedium,
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: theme.colorScheme.onSurface,
+          ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
             'Take multiple photos or pick images from your gallery. Add all vocab pages, then scan them together.',
-            style: theme.textTheme.bodyMedium,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
             textAlign: TextAlign.center,
           ),
         ),
         const Spacer(flex: 2),
         SizedBox(
           width: double.infinity,
-          height: 58,
-          child: ElevatedButton.icon(
+          height: 52,
+          child: FilledButton.icon(
             onPressed: _addCameraPhoto,
-            icon: const Icon(Icons.camera_alt_rounded, size: 22),
+            icon: const Icon(Icons.camera_alt_rounded, size: 20),
             label: const Text('Take Photos'),
-            style: ElevatedButton.styleFrom(
+            style: FilledButton.styleFrom(
               backgroundColor: theme.colorScheme.primary,
               foregroundColor: theme.colorScheme.onPrimary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         SizedBox(
           width: double.infinity,
-          height: 58,
+          height: 52,
           child: OutlinedButton.icon(
             onPressed: _addGalleryImages,
-            icon: const Icon(Icons.photo_library_rounded, size: 22),
+            icon: const Icon(Icons.photo_library_rounded, size: 20),
             label: const Text('Choose from Gallery'),
             style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              side: BorderSide(color: theme.colorScheme.outline),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              side: BorderSide(color: theme.colorScheme.outline.withValues(alpha: isDark ? 0.3 : 0.5)),
             ),
           ),
         ),
@@ -497,6 +484,7 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
   // ─── Processing: scanning / AI working ───
   Widget _buildProcessingState(ThemeData theme, bool isDark) {
     final isAI = _phase == 'aiProcessing';
+    final scheme = theme.colorScheme;
     return Column(
       key: const ValueKey('processing'),
       mainAxisAlignment: MainAxisAlignment.center,
@@ -505,49 +493,42 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
         ScaleTransition(
           scale: _pulseAnim,
           child: Container(
-            width: 120,
-            height: 120,
+            width: 100,
+            height: 100,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: isAI
-                    ? [const Color(0xFF7C3AED), const Color(0xFF2563EB)]
-                    : [theme.colorScheme.primary, theme.colorScheme.secondary],
-              ),
+              color: scheme.primary.withValues(alpha: isDark ? 0.15 : 0.08),
               shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                  blurRadius: 30,
-                  spreadRadius: 5,
-                ),
-              ],
             ),
             child: Icon(
               isAI ? Icons.psychology_rounded : Icons.document_scanner_rounded,
-              size: 48,
-              color: Colors.white,
+              size: 44,
+              color: scheme.primary,
             ),
           ),
         ),
-        const SizedBox(height: 36),
+        const SizedBox(height: 24),
         Text(
           isAI ? 'AI is Thinking…' : 'Reading Page…',
-          style: theme.textTheme.headlineMedium,
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: scheme.onSurface,
+          ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         Text(
           _statusMessage,
-          style: theme.textTheme.bodyMedium,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 24),
         SizedBox(
-          width: 200,
+          width: 180,
           child: LinearProgressIndicator(
-            borderRadius: BorderRadius.circular(8),
-            minHeight: 6,
-            backgroundColor: theme.colorScheme.surfaceContainerHighest,
-            color: theme.colorScheme.primary,
+            borderRadius: BorderRadius.circular(4),
+            minHeight: 4,
+            backgroundColor: scheme.outline.withValues(alpha: 0.12),
+            color: scheme.primary,
           ),
         ),
         const Spacer(flex: 3),
@@ -626,13 +607,20 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
               final genderColor = AppTheme.getGenderColor(article, isDark);
 
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: theme.colorScheme.outline.withValues(alpha: 0.15),
+                    color: theme.colorScheme.outline.withValues(alpha: isDark ? 0.15 : 0.5),
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0x08000000),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
                 ),
                 child: Row(
                   children: [
@@ -726,19 +714,26 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
               child: Container(
                 key: ValueKey('${_testIndex}_$_showAnswer'),
                 width: double.infinity,
-                padding: const EdgeInsets.all(28),
+                padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   gradient: _showAnswer
                       ? null
                       : AppTheme.getGenderGradient(card.article ?? '', isDark),
                   color: _showAnswer ? theme.colorScheme.surface : null,
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(color: genderColor.withValues(alpha: 0.3), width: 2),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: genderColor.withValues(alpha: isDark ? 0.25 : 0.18),
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: genderColor.withValues(alpha: 0.14),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
+                      color: const Color(0x08000000),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                    BoxShadow(
+                      color: genderColor.withValues(alpha: 0.08),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
@@ -869,50 +864,48 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
 
   // ─── Success ───
   Widget _buildSuccessState(ThemeData theme, bool isDark) {
+    final scheme = theme.colorScheme;
     return Column(
       key: const ValueKey('success'),
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const Spacer(flex: 2),
-        Container(
-          width: 120,
-          height: 120,
-          decoration: BoxDecoration(
-            color: theme.colorScheme.tertiary.withValues(alpha: isDark ? 0.15 : 0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            Icons.check_circle_rounded,
-            size: 64,
-            color: theme.colorScheme.tertiary,
+        Icon(
+          Icons.check_circle_rounded,
+          size: 64,
+          color: scheme.tertiary,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Success!',
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: scheme.onSurface,
           ),
         ),
-        const SizedBox(height: 28),
-        Text('Success!', style: theme.textTheme.headlineMedium),
         const SizedBox(height: 8),
         Text(
           _statusMessage.isNotEmpty
               ? _statusMessage
               : '$_savedCount flashcard${_savedCount == 1 ? '' : 's'} saved to your library.',
-          style: theme.textTheme.bodyLarge,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
           textAlign: TextAlign.center,
         ),
         const Spacer(flex: 2),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: _reset,
-                icon: const Icon(Icons.camera_alt_rounded, size: 20),
-                label: const Text('Scan Another'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  side: BorderSide(color: theme.colorScheme.outline),
-                ),
-              ),
+        SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: OutlinedButton.icon(
+            onPressed: _reset,
+            icon: const Icon(Icons.camera_alt_rounded, size: 18),
+            label: const Text('Scan Another'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              side: BorderSide(color: scheme.outline.withValues(alpha: isDark ? 0.3 : 0.5)),
             ),
-          ],
+          ),
         ),
         const SizedBox(height: 16),
       ],
@@ -921,38 +914,42 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
 
   // ─── Error ───
   Widget _buildErrorState(ThemeData theme, bool isDark) {
+    final scheme = theme.colorScheme;
     return Column(
       key: const ValueKey('error'),
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const Spacer(flex: 2),
-        Container(
-          width: 120,
-          height: 120,
-          decoration: BoxDecoration(
-            color: theme.colorScheme.error.withValues(alpha: isDark ? 0.15 : 0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            Icons.error_outline_rounded,
-            size: 64,
-            color: theme.colorScheme.error,
+        Icon(
+          Icons.error_outline_rounded,
+          size: 64,
+          color: scheme.error,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Oops!',
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: scheme.onSurface,
           ),
         ),
-        const SizedBox(height: 28),
-        Text('Oops!', style: theme.textTheme.headlineMedium),
         const SizedBox(height: 12),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(14),
+              color: scheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: scheme.outline.withValues(alpha: isDark ? 0.15 : 0.5),
+              ),
             ),
             child: Text(
               _statusMessage,
-              style: theme.textTheme.bodyMedium?.copyWith(fontFamily: 'monospace', fontSize: 13),
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontFamily: 'monospace',
+                color: scheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
           ),
@@ -960,15 +957,15 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
         const Spacer(flex: 2),
         SizedBox(
           width: double.infinity,
-          child: ElevatedButton.icon(
+          height: 50,
+          child: FilledButton.icon(
             onPressed: _reset,
-            icon: const Icon(Icons.refresh_rounded, size: 20),
+            icon: const Icon(Icons.refresh_rounded, size: 18),
             label: const Text('Try Again'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: theme.colorScheme.primary,
-              foregroundColor: theme.colorScheme.onPrimary,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            style: FilledButton.styleFrom(
+              backgroundColor: scheme.primary,
+              foregroundColor: scheme.onPrimary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
           ),
         ),
