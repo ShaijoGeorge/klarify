@@ -163,7 +163,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           Expanded(
                             child: _StatCard(
                               icon: Icons.layers_rounded,
-                              label: 'Total Cards',
+                              label: 'Total Vocabs',
                               value: '$_totalCards',
                               color: scheme.primary,
                               isDark: isDark,

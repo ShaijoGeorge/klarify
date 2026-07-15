@@ -644,7 +644,8 @@ class _WordTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final article = card.article ?? '';
+    final article = card.article?.trim().toLowerCase() ?? '';
+    final isValidArticle = article == 'der' || article == 'die' || article == 'das';
     final genderColor = AppTheme.getGenderColor(article, isDark);
     final streakCount = card.consecutiveCorrect;
 
@@ -688,14 +689,20 @@ class _WordTile extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Center(
-                child: Text(
-                  article.isNotEmpty ? article : '—',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: genderColor,
-                  ),
-                ),
+                child: isValidArticle
+                    ? Text(
+                        article,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: genderColor,
+                        ),
+                      )
+                    : Icon(
+                        Icons.sort_by_alpha_rounded,
+                        size: 20,
+                        color: genderColor,
+                      ),
               ),
             ),
             const SizedBox(width: 12),
