@@ -92,7 +92,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Klarify', style: theme.textTheme.titleLarge),
+                              Text('Klarify.', style: theme.textTheme.titleLarge),
                               const SizedBox(height: 2),
                               Text(
                                 'Learn German the smart way!',
