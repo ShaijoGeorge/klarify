@@ -4,6 +4,7 @@ import 'features/scanner/scanner_screen.dart';
 import 'features/library/library_screen.dart';
 import 'features/deck/deck_screen.dart';
 import 'features/settings/settings_screen.dart';
+import 'core/database/flashcard.dart';
 
 /// The app shell that manages bottom navigation between the 5 tabs.
 class AppShell extends StatefulWidget {
@@ -15,24 +16,29 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _currentIndex = 2;
+  List<Flashcard>? _transientCards;
 
-  void _goToTab(int index) {
-    setState(() => _currentIndex = index);
+  void _goToTab(int index, {List<Flashcard>? cards}) {
+    setState(() {
+      _currentIndex = index;
+      _transientCards = cards;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     final screens = [
-      const ScannerScreen(),
-      const LibraryScreen(),
+      ScannerScreen(
+        onLibraryTap: (cards) => _goToTab(1, cards: cards),
+        onDeckTap: (cards) => _goToTab(3, cards: cards),
+      ),
+      LibraryScreen(initialCards: _transientCards),
       HomeScreen(
         onScanTap: () => _goToTab(0),
         onLibraryTap: () => _goToTab(1),
         onDeckTap: () => _goToTab(3),
       ),
-      const DeckScreen(),
+      DeckScreen(initialCards: _transientCards),
       const SettingsScreen(),
     ];
 

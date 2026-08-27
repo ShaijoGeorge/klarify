@@ -6,7 +6,9 @@ import '../../core/theme/app_theme.dart';
 import '../../main.dart';
 
 class LibraryScreen extends StatefulWidget {
-  const LibraryScreen({super.key});
+  final List<Flashcard>? initialCards;
+
+  const LibraryScreen({super.key, this.initialCards});
 
   @override
   State<LibraryScreen> createState() => _LibraryScreenState();
@@ -40,6 +42,15 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   Future<void> _loadCards() async {
+    if (widget.initialCards != null) {
+      setState(() {
+        _allCards = widget.initialCards!;
+        _isLoading = false;
+      });
+      _applyFilter();
+      return;
+    }
+
     // Sort by newest first
     final cards = await isarDb.flashcards.where().sortByCreatedAtDesc().findAll();
     setState(() {
@@ -590,10 +601,15 @@ class _ActiveFilterChip extends StatelessWidget {
     
     Color color = scheme.secondary;
     if (isGender) {
-      if (label == 'der') color = AppTheme.getGenderColor('der', isDark);
-      else if (label == 'die') color = AppTheme.getGenderColor('die', isDark);
-      else if (label == 'das') color = AppTheme.getGenderColor('das', isDark);
-      else color = scheme.primary;
+      if (label == 'der') {
+        color = AppTheme.getGenderColor('der', isDark);
+      } else if (label == 'die') {
+        color = AppTheme.getGenderColor('die', isDark);
+      } else if (label == 'das') {
+        color = AppTheme.getGenderColor('das', isDark);
+      } else {
+        color = scheme.primary;
+      }
     }
 
     return Container(

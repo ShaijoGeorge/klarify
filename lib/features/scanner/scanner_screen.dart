@@ -9,7 +9,14 @@ import '../../core/theme/app_theme.dart';
 import '../../main.dart';
 
 class ScannerScreen extends StatefulWidget {
-  const ScannerScreen({super.key});
+  final void Function(List<Flashcard>) onLibraryTap;
+  final void Function(List<Flashcard>) onDeckTap;
+
+  const ScannerScreen({
+    super.key,
+    required this.onLibraryTap,
+    required this.onDeckTap,
+  });
 
   @override
   State<ScannerScreen> createState() => _ScannerScreenState();
@@ -25,8 +32,7 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
   int _savedCount = 0;
   List<XFile> _selectedImages = [];
   List<Flashcard> _scannedCards = [];
-  int _testIndex = 0;
-  bool _showAnswer = false;
+
   late AnimationController _pulseController;
   late Animation<double> _pulseAnim;
 
@@ -116,11 +122,9 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
         });
 
         setState(() {
-          _phase = 'scannedLibrary';
-          _scannedCards = generatedCards;
+          _phase = 'success';
           _savedCount = generatedCards.length;
-          _testIndex = 0;
-          _showAnswer = false;
+          _scannedCards = generatedCards;
           _selectedImages = [];
           _statusMessage = totalPages == 1
               ? 'Saved $_savedCount words from this scan.'
@@ -140,48 +144,7 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
     }
   }
 
-  void _startTest() {
-    if (_scannedCards.isEmpty) return;
-    setState(() {
-      _phase = 'test';
-      _testIndex = 0;
-      _showAnswer = false;
-      _statusMessage = 'Flashcard test for this scan.';
-    });
-  }
 
-  void _toggleTestAnswer() {
-    setState(() => _showAnswer = !_showAnswer);
-  }
-
-  void _moveTest(int delta) {
-    if (_scannedCards.isEmpty) return;
-
-    final nextIndex = _testIndex + delta;
-    if (nextIndex < 0 || nextIndex >= _scannedCards.length) return;
-
-    setState(() {
-      _testIndex = nextIndex;
-      _showAnswer = false;
-    });
-  }
-
-  void _handleTestSwipe(DragEndDetails details) {
-    final velocity = details.primaryVelocity ?? 0;
-    if (velocity < -200) {
-      _moveTest(1);
-    } else if (velocity > 200) {
-      _moveTest(-1);
-    }
-  }
-
-  void _finishTest() {
-    setState(() {
-      _phase = 'success';
-      _statusMessage = 'Test complete. $_savedCount words are saved in your library.';
-      _showAnswer = false;
-    });
-  }
 
   void _reset() {
     setState(() {
@@ -190,8 +153,6 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
       _savedCount = 0;
       _selectedImages = [];
       _scannedCards = [];
-      _testIndex = 0;
-      _showAnswer = false;
     });
   }
 
@@ -237,10 +198,7 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
       case 'scanning':
       case 'aiProcessing':
         return _buildProcessingState(theme, isDark);
-      case 'scannedLibrary':
-        return _buildScannedLibraryState(theme, isDark);
-      case 'test':
-        return _buildTestState(theme, isDark);
+
       case 'success':
         return _buildSuccessState(theme, isDark);
       case 'error':
@@ -536,331 +494,6 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
     );
   }
 
-  // ─── Scanned Library: only the current scan ───
-  Widget _buildScannedLibraryState(ThemeData theme, bool isDark) {
-    return Column(
-      key: const ValueKey('scannedLibrary'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            OutlinedButton.icon(
-              onPressed: _reset,
-              icon: const Icon(Icons.arrow_back_rounded, size: 16),
-              label: const Text('Back'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                minimumSize: const Size(0, 36),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const Spacer(),
-            FilledButton.icon(
-              onPressed: _startTest,
-              icon: const Icon(Icons.quiz_rounded, size: 16),
-              label: const Text('Take Test'),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                minimumSize: const Size(0, 36),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Text(
-              'Just scanned vocabulary',
-              style: theme.textTheme.titleMedium,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(width: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Text(
-                '$_savedCount saved',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 14),
-        Expanded(
-          child: ListView.separated(
-            physics: const BouncingScrollPhysics(),
-            itemCount: _scannedCards.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final card = _scannedCards[index];
-              final article = card.article ?? '';
-              final genderColor = AppTheme.getGenderColor(article, isDark);
-
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: theme.colorScheme.outline.withValues(alpha: isDark ? 0.15 : 0.5),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0x08000000),
-                      blurRadius: 4,
-                      offset: const Offset(0, 1),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: genderColor.withValues(alpha: isDark ? 0.15 : 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Center(
-                        child: Text(
-                          article.isNotEmpty ? article : '-',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                            color: genderColor,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(card.word ?? '', style: theme.textTheme.titleMedium),
-                          const SizedBox(height: 2),
-                          Text(card.translation ?? '', style: theme.textTheme.bodyMedium),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ─── Test: flashcards from only the current scan ───
-  Widget _buildTestState(ThemeData theme, bool isDark) {
-    final card = _scannedCards[_testIndex];
-    final article = card.article ?? '';
-    final genderColor = AppTheme.getGenderColor(article, isDark);
-    final canGoBack = _testIndex > 0;
-    final canGoForward = _testIndex < _scannedCards.length - 1;
-
-    return Column(
-      key: const ValueKey('test'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Text(
-                '${_testIndex + 1} / ${_scannedCards.length}',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                _statusMessage,
-                style: theme.textTheme.bodyMedium,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 18),
-        Expanded(
-          child: GestureDetector(
-            onTap: _toggleTestAnswer,
-            onHorizontalDragEnd: _handleTestSwipe,
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 220),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeInCubic,
-              child: Container(
-                key: ValueKey('${_testIndex}_$_showAnswer'),
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: _showAnswer
-                      ? null
-                      : AppTheme.getGenderGradient(card.article ?? '', isDark),
-                  color: _showAnswer ? theme.colorScheme.surface : null,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: genderColor.withValues(alpha: isDark ? 0.25 : 0.18),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0x08000000),
-                      blurRadius: 4,
-                      offset: const Offset(0, 1),
-                    ),
-                    BoxShadow(
-                      color: genderColor.withValues(alpha: 0.08),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (article.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: genderColor.withValues(alpha: isDark ? 0.2 : 0.12),
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: Text(
-                          article,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            color: genderColor,
-                          ),
-                        ),
-                      ),
-                    const SizedBox(height: 16),
-                    Text(
-                      card.word ?? '',
-                      style: theme.textTheme.displayLarge?.copyWith(fontSize: 40),
-                      textAlign: TextAlign.center,
-                    ),
-                    if (_showAnswer) ...[
-                      const SizedBox(height: 20),
-                      Container(
-                        width: 56,
-                        height: 2,
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.outline.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        card.translation ?? '',
-                        style: theme.textTheme.headlineMedium,
-                        textAlign: TextAlign.center,
-                      ),
-                      if ((card.pluralForm ?? '').isNotEmpty) ...[
-                        const SizedBox(height: 10),
-                        Text(
-                          'Plural: ${card.pluralForm}',
-                          style: theme.textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ] else ...[
-                      const SizedBox(height: 18),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.touch_app_rounded,
-                              size: 18, color: theme.colorScheme.onSurfaceVariant),
-                          const SizedBox(width: 8),
-                          Text('Tap to reveal', style: theme.textTheme.bodyMedium),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 18),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.swipe_rounded, size: 18, color: theme.colorScheme.onSurfaceVariant),
-            const SizedBox(width: 8),
-            Text(
-              _showAnswer ? 'Swipe left or right to change cards' : 'Tap to reveal',
-              style: theme.textTheme.bodyMedium,
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            IconButton.filledTonal(
-              onPressed: canGoBack ? () => _moveTest(-1) : null,
-              icon: const Icon(Icons.chevron_left_rounded),
-              tooltip: 'Previous card',
-            ),
-            const Spacer(),
-            if (canGoForward)
-              FilledButton.icon(
-                onPressed: () => _moveTest(1),
-                icon: const Icon(Icons.chevron_right_rounded, size: 20),
-                label: const Text('Next Card'),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-              )
-            else
-              FilledButton.icon(
-                onPressed: _finishTest,
-                icon: const Icon(Icons.check_rounded, size: 20),
-                label: const Text('Finish Test'),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-              ),
-            const Spacer(),
-            IconButton.filledTonal(
-              onPressed: () {
-                setState(() {
-                  _phase = 'scannedLibrary';
-                  _showAnswer = false;
-                });
-              },
-              icon: const Icon(Icons.list_rounded),
-              tooltip: 'Back to scanned vocabulary',
-            ),
-          ],
-        ),
-      ],
-    );
-  }
 
   // ─── Success ───
   Widget _buildSuccessState(ThemeData theme, bool isDark) {
@@ -895,13 +528,41 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
         const Spacer(flex: 2),
         SizedBox(
           width: double.infinity,
-          height: 50,
+          height: 52,
+          child: FilledButton.icon(
+            onPressed: () => widget.onDeckTap(_scannedCards),
+            icon: const Icon(Icons.style_rounded, size: 20),
+            label: const Text('Review Now'),
+            style: FilledButton.styleFrom(
+              backgroundColor: scheme.primary,
+              foregroundColor: scheme.onPrimary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: OutlinedButton.icon(
+            onPressed: () => widget.onLibraryTap(_scannedCards),
+            icon: const Icon(Icons.library_books_rounded, size: 20),
+            label: const Text('View in Library'),
+            style: OutlinedButton.styleFrom(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              side: BorderSide(color: scheme.outline.withValues(alpha: isDark ? 0.3 : 0.5)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          height: 52,
           child: OutlinedButton.icon(
             onPressed: _reset,
-            icon: const Icon(Icons.camera_alt_rounded, size: 18),
+            icon: const Icon(Icons.camera_alt_rounded, size: 20),
             label: const Text('Scan Another'),
             style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               side: BorderSide(color: scheme.outline.withValues(alpha: isDark ? 0.3 : 0.5)),
             ),
@@ -973,4 +634,5 @@ class _ScannerScreenState extends State<ScannerScreen> with SingleTickerProvider
       ],
     );
   }
+
 }

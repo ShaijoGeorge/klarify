@@ -3,7 +3,7 @@ import 'package:isar/isar.dart';
 import 'package:intl/intl.dart';
 import '../../core/database/flashcard.dart';
 import '../../main.dart';
-import '../settings/settings_screen.dart';
+
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback onScanTap;

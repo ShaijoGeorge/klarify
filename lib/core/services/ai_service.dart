@@ -2,18 +2,26 @@ import 'dart:convert';
 import 'dart:developer';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import '../database/flashcard.dart';
-
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AiService {
-  // Google AI Studio key loaded from .env
-  static String get _apiKey => dotenv.env['GEMINI_API_KEY'] ?? ''; 
+  static Future<String> get _getApiKey async {
+    final prefs = await SharedPreferences.getInstance();
+    final overrideKey = prefs.getString('GEMINI_API_KEY');
+    if (overrideKey != null && overrideKey.isNotEmpty) {
+      return overrideKey;
+    }
+    return dotenv.env['GEMINI_API_KEY'] ?? '';
+  }
 
   static Future<List<Flashcard>> generateFlashcards(String rawText) async {
+    final apiKey = await _getApiKey;
+
     // Wake up the Gemini Brain
     final model = GenerativeModel(
-      model: 'gemini-2.5-flash', // The super-fast, free version
-      apiKey: _apiKey,
+      model: 'gemini-3.5-flash', // The super-fast, free version
+      apiKey: apiKey,
     );
 
     // The Strict Instructions (The Prompt)

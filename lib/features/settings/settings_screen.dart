@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../../core/database/flashcard.dart';
+import '../../core/theme/app_theme.dart';
 import '../../main.dart';
+import 'cache_viewer_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -138,6 +142,12 @@ class SettingsScreen extends StatelessWidget {
                     title: 'App Version',
                     subtitle: 'v1.0.0',
                     isDark: isDark,
+                    onLongPress: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const CacheViewerScreen()),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -148,12 +158,22 @@ class SettingsScreen extends StatelessWidget {
               Center(
                 child: Column(
                   children: [
-                    Text('Klarify German', style: theme.textTheme.titleMedium),
+                    Text('Klarify.', style: theme.textTheme.titleMedium),
                     const SizedBox(height: 4),
-                    Text(
-                      'Made with ❤️ by Shaijo George',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: scheme.onSurfaceVariant,
+                    GestureDetector(
+                      onTap: () async {
+                        final url = Uri.parse('https://shaijogeorge.vercel.app/');
+                        try {
+                          await launchUrl(url, mode: LaunchMode.externalApplication);
+                        } catch (e) {
+                          // Ignore if unable to launch
+                        }
+                      },
+                      child: Text(
+                        'Made with ❤️ by Shaijo George',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   ],
@@ -388,6 +408,7 @@ class _SettingsTile extends StatelessWidget {
   final Color? iconColor;
   final Widget? trailing;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final bool isDark;
 
   const _SettingsTile({
@@ -398,6 +419,7 @@ class _SettingsTile extends StatelessWidget {
     this.iconColor,
     this.trailing,
     this.onTap,
+    this.onLongPress,
   });
 
   @override
@@ -410,6 +432,7 @@ class _SettingsTile extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -440,7 +463,7 @@ class _SettingsTile extends StatelessWidget {
                   ],
                 ),
               ),
-              if (trailing != null) trailing!,
+              trailing ?? const SizedBox.shrink(),
             ],
           ),
         ),

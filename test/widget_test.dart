@@ -1,6 +1,5 @@
 // Placeholder test file — the default counter test no longer applies.
-// TODO: Add proper widget tests for Klarify German screens.
-
+// Tests will be added later for Klarify German screens.
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

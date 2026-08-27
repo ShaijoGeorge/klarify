@@ -6,7 +6,9 @@ import '../../core/theme/app_theme.dart';
 import '../../main.dart';
 
 class DeckScreen extends StatefulWidget {
-  const DeckScreen({super.key});
+  final List<Flashcard>? initialCards;
+
+  const DeckScreen({super.key, this.initialCards});
 
   @override
   State<DeckScreen> createState() => _DeckScreenState();
@@ -41,7 +43,7 @@ class _DeckScreenState extends State<DeckScreen> with SingleTickerProviderStateM
   }
 
   Future<void> _loadCards() async {
-    final cards = await isarDb.flashcards.where().findAll();
+    final cards = widget.initialCards ?? await isarDb.flashcards.where().findAll();
 
     setState(() {
       _cards = cards;
@@ -62,16 +64,7 @@ class _DeckScreenState extends State<DeckScreen> with SingleTickerProviderStateM
     _flipController.forward();
   }
 
-  void _goToCard(int delta) {
-    final nextIndex = _currentIndex + delta;
-    if (nextIndex < 0 || nextIndex >= _cards.length) return;
 
-    _pageController.animateToPage(
-      nextIndex,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -208,8 +201,6 @@ class _DeckScreenState extends State<DeckScreen> with SingleTickerProviderStateM
 
   // Card Review
   Widget _buildCardReview(ThemeData theme, bool isDark) {
-    final scheme = theme.colorScheme;
-
     return Column(
       children: [
         Expanded(
